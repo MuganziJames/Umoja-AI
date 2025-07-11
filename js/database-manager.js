@@ -118,130 +118,160 @@ class DatabaseManager {
     }
   }
 
-  // Story Management
+  // Story Management - Fixed to match exact schema
   async submitStory(storyData) {
     try {
+      this.ensureInitialized();
+
+      console.log("🔍 Starting story submission with data:", storyData);
+
       const user = await this.getCurrentUser();
       if (!user) {
         throw new Error("User must be authenticated to submit stories");
       }
 
-      // Sanitize input data
-      const sanitizedData = {
-        title:
-          window.InputSanitizer?.sanitizeText(storyData.title) ||
-          storyData.title,
-        content:
-          window.InputSanitizer?.sanitizeText(storyData.content) ||
-          storyData.content,
-        category: storyData.category || "general",
-        isAnonymous: Boolean(storyData.isAnonymous),
-      };
+      console.log("✅ User authenticated:", user.email);
 
-      // AI-powered content moderation with error handling
-      let moderationResult;
-      try {
-        moderationResult = await window.UmojaAI.moderateContent(
-          sanitizedData.content
+      // Validate required fields
+      if (!storyData.title || !storyData.content || !storyData.authorName) {
+        throw new Error(
+          "Missing required fields: title, content, or authorName"
         );
-        if (moderationResult.flagged) {
-          return {
-            success: false,
-            error:
-              "Content flagged by moderation system. Please review and modify your story.",
-            moderation: moderationResult,
-          };
-        }
-      } catch (error) {
-        console.warn(
-          "Content moderation failed, proceeding without it:",
-          error
-        );
-        window.GlobalErrorHandler?.reportError(error, {
-          context: "content_moderation",
-        });
       }
 
-      // AI-powered categorization if no category provided with error handling
-      if (!sanitizedData.category || sanitizedData.category === "general") {
-        try {
-          sanitizedData.category = await window.UmojaAI.categorizeStory(
-            sanitizedData.title,
-            sanitizedData.content
-          );
-        } catch (error) {
-          console.warn("Auto-categorization failed, using default:", error);
-          sanitizedData.category = "general";
-          window.GlobalErrorHandler?.reportError(error, {
-            context: "auto_categorization",
-          });
+      // Get category ID from category slug if category is provided
+      let categoryId = null;
+      if (storyData.category) {
+        console.log("🔍 Looking up category:", storyData.category);
+        const { data: categoryData, error: categoryError } = await this.supabase
+          .from("categories")
+          .select("id")
+          .eq("slug", storyData.category)
+          .single();
+
+        if (!categoryError && categoryData) {
+          categoryId = categoryData.id;
+          console.log("✅ Found category ID:", categoryId);
+        } else {
+          console.warn("⚠️ Category not found, will use default");
         }
       }
 
-      // Generate AI summary with error handling
-      let summary = "";
-      try {
-        summary = await window.UmojaAI.generateSummary(sanitizedData.content);
-      } catch (error) {
-        console.warn("Summary generation failed:", error);
-        summary = sanitizedData.content.substring(0, 200) + "...";
-        window.GlobalErrorHandler?.reportError(error, {
-          context: "summary_generation",
-        });
+      // Simple content moderation (since AI is disabled)
+      const harmfulPatterns = [
+        /\b(hate|violence|threat|kill|die|suicide)\b/i,
+        /\b(f\*\*k|sh\*t)\b/i,
+      ];
+
+      const contentFlagged = harmfulPatterns.some((pattern) =>
+        pattern.test(storyData.content)
+      );
+      if (contentFlagged) {
+        return {
+          success: false,
+          error:
+            "Content contains inappropriate language. Please review and modify your story.",
+        };
       }
 
-      // Sentiment analysis with error handling
-      let sentiment = "neutral";
-      try {
-        sentiment = await window.UmojaAI.analyzeSentiment(
-          sanitizedData.content
-        );
-      } catch (error) {
-        console.warn("Sentiment analysis failed:", error);
-        sentiment = "neutral";
-        window.GlobalErrorHandler?.reportError(error, {
-          context: "sentiment_analysis",
-        });
-      }
+      // Calculate reading time (200 words per minute)
+      const wordCount = storyData.content.trim().split(/\s+/).length;
+      const readingTime = Math.ceil(wordCount / 200);
 
+      // Create story record matching EXACT schema - DIRECT PUBLICATION
       const storyRecord = {
-        title: sanitizedData.title,
-        content: sanitizedData.content,
-        author_name: storyData.authorName,
+        title: storyData.title.trim(),
+        content: storyData.content.trim(),
+        summary:
+          storyData.content.substring(0, 200) +
+          (storyData.content.length > 200 ? "..." : ""),
+        author_name: storyData.authorName.trim(),
         author_email: user.email,
-        category: sanitizedData.category, // Fixed: use sanitizedData.category instead of storyData.category
-        status: this.status.PENDING,
-        summary: summary,
-        sentiment_data: sentiment,
+        category: storyData.category || "community",
+        status: "approved", // CHANGED: Direct approval - no review needed
+        is_anonymous: Boolean(storyData.isAnonymous),
+        is_featured: false,
+        is_trending: false,
+        allow_comments: true,
+        image_url: storyData.imageUrl || null,
+        audio_url: null,
+        video_url: null,
+        reading_time: readingTime,
+        sentiment_data: null,
+        ai_metadata: {
+          processing_date: new Date().toISOString(),
+          ai_enabled: false,
+          auto_approved: true,
+        },
+        seo_metadata: {},
+        view_count: 0,
+        like_count: 0,
+        comment_count: 0,
+        share_count: 0,
+        bookmark_count: 0,
         user_id: user.id,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
+        category_id: categoryId,
+        moderator_id: null,
+        moderation_notes: "Auto-approved on submission",
+        rejection_reason: null,
+        published_at: new Date().toISOString(), // CHANGED: Published immediately
+        featured_at: null,
+        archived_at: null,
       };
 
+      console.log("📝 Final story record to insert:", storyRecord);
+
+      // Insert into database
       const { data, error } = await this.supabase
-        .from(this.tables.STORIES)
+        .from("stories")
         .insert([storyRecord])
-        .select();
+        .select()
+        .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error("❌ Database insertion error:", error);
+        throw new Error(`Database error: ${error.message}`);
+      }
 
-      return { success: true, story: data[0] };
+      console.log("✅ Story inserted successfully:", data);
+
+      return {
+        success: true,
+        story: data,
+        message: "Story published successfully and is now live!",
+      };
     } catch (error) {
-      console.error("Submit story error:", error);
-      return { success: false, error: error.message };
+      console.error("❌ Submit story error:", error);
+      return {
+        success: false,
+        error: error.message,
+        details: error,
+      };
     }
   }
 
+  // Get stories with proper filtering and joins
   async getStories(filters = {}) {
     try {
+      this.ensureInitialized();
+
+      console.log("🔍 Getting stories with filters:", filters);
+
+      // Build query with proper joins for author info
       let query = this.supabase
-        .from(this.tables.STORIES)
-        .select("*")
-        .eq("status", this.status.APPROVED)
+        .from("stories")
+        .select(
+          `
+          *,
+          user_profiles(full_name, avatar_url, username),
+          categories(name, slug, color)
+        `
+        )
+        .eq("status", "approved")
         .order("created_at", { ascending: false });
 
       // Apply filters
-      if (filters.category) {
+      if (filters.category && filters.category !== "all") {
         query = query.eq("category", filters.category);
       }
 
@@ -251,11 +281,71 @@ class DatabaseManager {
 
       const { data, error } = await query;
 
-      if (error) throw error;
-      return { success: true, stories: data };
+      if (error) {
+        console.error("❌ Get stories error:", error);
+        throw error;
+      }
+
+      console.log("✅ Retrieved stories:", data?.length || 0);
+      return { success: true, stories: data || [] };
     } catch (error) {
       console.error("Get stories error:", error);
-      return { success: false, error: error.message };
+      return { success: false, error: error.message, stories: [] };
+    }
+  }
+
+  // Get all stories (including pending) for admin/moderation
+  async getAllStories(filters = {}) {
+    try {
+      this.ensureInitialized();
+
+      const user = await this.getCurrentUser();
+      if (!user) {
+        throw new Error("Authentication required");
+      }
+
+      console.log("🔍 Getting ALL stories with filters:", filters);
+
+      let query = this.supabase
+        .from("stories")
+        .select(
+          `
+          *,
+          user_profiles(full_name, avatar_url, username),
+          categories(name, slug, color)
+        `
+        )
+        .order("created_at", { ascending: false });
+
+      // Apply filters
+      if (filters.status) {
+        query = query.eq("status", filters.status);
+      }
+
+      if (filters.category && filters.category !== "all") {
+        query = query.eq("category", filters.category);
+      }
+
+      if (filters.userId) {
+        query = query.eq("user_id", filters.userId);
+      }
+
+      if (filters.limit) {
+        query = query.limit(filters.limit);
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.error("❌ Get all stories error:", error);
+        throw error;
+      }
+
+      console.log("✅ Retrieved all stories:", data?.length || 0);
+      return { success: true, stories: data || [] };
+    } catch (error) {
+      console.error("Get all stories error:", error);
+      return { success: false, error: error.message, stories: [] };
     }
   }
 

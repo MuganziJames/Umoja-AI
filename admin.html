@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Story Management - Admin</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      .header {
+        background: #f8f9fa;
+        padding: 20px;
+        margin-bottom: 20px;
+        border-radius: 8px;
+      }
+      .filters {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+      }
+      .filters select,
+      .filters button {
+        padding: 8px 12px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+      }
+      .story-card {
+        border: 1px solid #ddd;
+        padding: 15px;
+        margin: 10px 0;
+        border-radius: 8px;
+        background: white;
+      }
+      .story-header {
+        display: flex;
+        justify-content: between;
+        align-items: center;
+        margin-bottom: 10px;
+      }
+      .story-title {
+        font-size: 18px;
+        font-weight: bold;
+        margin: 0;
+      }
+      .story-meta {
+        color: #666;
+        font-size: 14px;
+        margin: 5px 0;
+      }
+      .story-content {
+        margin: 10px 0;
+        padding: 10px;
+        background: #f8f9fa;
+        border-radius: 4px;
+        max-height: 150px;
+        overflow-y: auto;
+      }
+      .story-actions {
+        display: flex;
+        gap: 10px;
+        margin-top: 10px;
+      }
+      .btn {
+        padding: 8px 16px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+      }
+      .btn-approve {
+        background: #28a745;
+        color: white;
+      }
+      .btn-reject {
+        background: #dc3545;
+        color: white;
+      }
+      .btn-view {
+        background: #17a2b8;
+        color: white;
+      }
+      .status {
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: bold;
+      }
+      .status-pending {
+        background: #fff3cd;
+        color: #856404;
+      }
+      .status-approved {
+        background: #d4edda;
+        color: #155724;
+      }
+      .status-rejected {
+        background: #f8d7da;
+        color: #721c24;
+      }
+      .loading {
+        text-align: center;
+        padding: 20px;
+        color: #666;
+      }
+      .empty {
+        text-align: center;
+        padding: 40px;
+        color: #666;
+      }
+      .stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        margin-bottom: 20px;
+      }
+      .stat-card {
+        background: white;
+        padding: 15px;
+        border-radius: 8px;
+        border: 1px solid #ddd;
+        text-align: center;
+      }
+      .stat-number {
+        font-size: 24px;
+        font-weight: bold;
+        color: #007bff;
+      }
+      .stat-label {
+        color: #666;
+        font-size: 14px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <h1>📝 Story Management Dashboard</h1>
+      <p>Manage and review submitted stories</p>
+    </div>
+
+    <div class="stats" id="stats">
+      <div class="stat-card">
+        <div class="stat-number" id="pending-count">-</div>
+        <div class="stat-label">Pending Review</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" id="approved-count">-</div>
+        <div class="stat-label">Approved</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" id="rejected-count">-</div>
+        <div class="stat-label">Rejected</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" id="total-count">-</div>
+        <div class="stat-label">Total Stories</div>
+      </div>
+    </div>
+
+    <div class="filters">
+      <select id="status-filter">
+        <option value="">All Status</option>
+        <option value="pending_review">Pending Review</option>
+        <option value="approved">Approved</option>
+        <option value="rejected">Rejected</option>
+        <option value="draft">Drafts</option>
+      </select>
+
+      <select id="category-filter">
+        <option value="">All Categories</option>
+        <option value="mental-health">Mental Health</option>
+        <option value="gender-issues">Gender Issues</option>
+        <option value="social-justice">Social Justice</option>
+        <option value="community">Community</option>
+        <option value="education">Education</option>
+        <option value="healthcare">Healthcare</option>
+        <option value="technology">Technology</option>
+        <option value="environment">Environment</option>
+        <option value="personal-growth">Personal Growth</option>
+        <option value="entrepreneurship">Entrepreneurship</option>
+      </select>
+
+      <button onclick="loadStories()" class="btn btn-view">🔄 Refresh</button>
+      <button onclick="approveAllPending()" class="btn btn-approve">
+        ✅ Approve All Pending
+      </button>
+    </div>
+
+    <div id="stories-container">
+      <div class="loading">Loading stories...</div>
+    </div>
+
+    <!-- Include scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="js/global-error-handler.js"></script>
+    <script src="js/input-sanitizer.js"></script>
+    <script src="js/supabase-config.js"></script>
+    <script src="js/ai-services.js"></script>
+    <script src="js/database-manager.js"></script>
+
+    <script>
+      let allStories = [];
+
+      async function initializePage() {
+        try {
+          // Wait for database manager
+          let retries = 0;
+          while (!window.UmojaConfig && retries < 50) {
+            await new Promise((resolve) => setTimeout(resolve, 100));
+            retries++;
+          }
+
+          if (!window.UmojaDB) {
+            window.UmojaDB =
+              await window.DatabaseManager.waitForConfigAndCreate();
+          }
+
+          // Check if user is authenticated and has admin privileges
+          const user = await window.UmojaDB.getCurrentUser();
+          if (!user) {
+            document.getElementById("stories-container").innerHTML =
+              '<div class="empty">❌ Please sign in to access the admin dashboard.</div>';
+            return;
+          }
+
+          await loadStories();
+          setupEventListeners();
+        } catch (error) {
+          console.error("Initialization error:", error);
+          document.getElementById(
+            "stories-container"
+          ).innerHTML = `<div class="empty">❌ Error loading dashboard: ${error.message}</div>`;
+        }
+      }
+
+      function setupEventListeners() {
+        document
+          .getElementById("status-filter")
+          .addEventListener("change", filterStories);
+        document
+          .getElementById("category-filter")
+          .addEventListener("change", filterStories);
+      }
+
+      async function loadStories() {
+        try {
+          document.getElementById("stories-container").innerHTML =
+            '<div class="loading">Loading stories...</div>';
+
+          const result = await window.UmojaDB.getAllStories();
+
+          if (result.success) {
+            allStories = result.stories;
+            updateStats();
+            filterStories();
+          } else {
+            throw new Error(result.error);
+          }
+        } catch (error) {
+          console.error("Load stories error:", error);
+          document.getElementById(
+            "stories-container"
+          ).innerHTML = `<div class="empty">❌ Error loading stories: ${error.message}</div>`;
+        }
+      }
+
+      function updateStats() {
+        const stats = {
+          pending: allStories.filter((s) => s.status === "pending_review")
+            .length,
+          approved: allStories.filter((s) => s.status === "approved").length,
+          rejected: allStories.filter((s) => s.status === "rejected").length,
+          total: allStories.length,
+        };
+
+        document.getElementById("pending-count").textContent = stats.pending;
+        document.getElementById("approved-count").textContent = stats.approved;
+        document.getElementById("rejected-count").textContent = stats.rejected;
+        document.getElementById("total-count").textContent = stats.total;
+      }
+
+      function filterStories() {
+        const statusFilter = document.getElementById("status-filter").value;
+        const categoryFilter = document.getElementById("category-filter").value;
+
+        let filteredStories = allStories;
+
+        if (statusFilter) {
+          filteredStories = filteredStories.filter(
+            (story) => story.status === statusFilter
+          );
+        }
+
+        if (categoryFilter) {
+          filteredStories = filteredStories.filter(
+            (story) => story.category === categoryFilter
+          );
+        }
+
+        displayStories(filteredStories);
+      }
+
+      function displayStories(stories) {
+        const container = document.getElementById("stories-container");
+
+        if (stories.length === 0) {
+          container.innerHTML =
+            '<div class="empty">📭 No stories found matching the current filters.</div>';
+          return;
+        }
+
+        const storiesHTML = stories
+          .map(
+            (story) => `
+                <div class="story-card">
+                    <div class="story-header">
+                        <h3 class="story-title">${escapeHtml(story.title)}</h3>
+                        <span class="status status-${story.status.replace(
+                          "_",
+                          "-"
+                        )}">${story.status
+              .replace("_", " ")
+              .toUpperCase()}</span>
+                    </div>
+                    
+                    <div class="story-meta">
+                        <strong>Author:</strong> ${escapeHtml(
+                          story.author_name
+                        )} (${escapeHtml(story.author_email)}) | 
+                        <strong>Category:</strong> ${escapeHtml(
+                          story.category
+                        )} | 
+                        <strong>Submitted:</strong> ${new Date(
+                          story.created_at
+                        ).toLocaleDateString()} |
+                        <strong>Reading Time:</strong> ${
+                          story.reading_time || 1
+                        } min
+                    </div>
+                    
+                    <div class="story-content">
+                        ${escapeHtml(story.content.substring(0, 500))}${
+              story.content.length > 500 ? "..." : ""
+            }
+                    </div>
+                    
+                    <div class="story-actions">
+                        ${
+                          story.status === "pending_review"
+                            ? `
+                            <button class="btn btn-approve" onclick="approveStory('${story.id}')">✅ Approve</button>
+                            <button class="btn btn-reject" onclick="rejectStory('${story.id}')">❌ Reject</button>
+                        `
+                            : ""
+                        }
+                        <button class="btn btn-view" onclick="viewStoryDetails('${
+                          story.id
+                        }')">👁️ View Details</button>
+                    </div>
+                </div>
+            `
+          )
+          .join("");
+
+        container.innerHTML = storiesHTML;
+      }
+
+      async function approveStory(storyId) {
+        try {
+          const { data, error } = await window.UmojaDB.supabase
+            .from("stories")
+            .update({
+              status: "approved",
+              published_at: new Date().toISOString(),
+            })
+            .eq("id", storyId);
+
+          if (error) throw error;
+
+          alert("✅ Story approved successfully!");
+          await loadStories();
+        } catch (error) {
+          console.error("Approve error:", error);
+          alert(`❌ Error approving story: ${error.message}`);
+        }
+      }
+
+      async function rejectStory(storyId) {
+        const reason = prompt("Enter rejection reason (optional):");
+
+        try {
+          const { data, error } = await window.UmojaDB.supabase
+            .from("stories")
+            .update({
+              status: "rejected",
+              rejection_reason: reason || "No reason provided",
+            })
+            .eq("id", storyId);
+
+          if (error) throw error;
+
+          alert("❌ Story rejected.");
+          await loadStories();
+        } catch (error) {
+          console.error("Reject error:", error);
+          alert(`❌ Error rejecting story: ${error.message}`);
+        }
+      }
+
+      async function approveAllPending() {
+        if (!confirm("Are you sure you want to approve ALL pending stories?"))
+          return;
+
+        try {
+          const { data, error } = await window.UmojaDB.supabase
+            .from("stories")
+            .update({
+              status: "approved",
+              published_at: new Date().toISOString(),
+            })
+            .eq("status", "pending_review");
+
+          if (error) throw error;
+
+          alert("✅ All pending stories approved!");
+          await loadStories();
+        } catch (error) {
+          console.error("Approve all error:", error);
+          alert(`❌ Error approving stories: ${error.message}`);
+        }
+      }
+
+      function viewStoryDetails(storyId) {
+        const story = allStories.find((s) => s.id === storyId);
+        if (!story) return;
+
+        const details = `
+Story Details:
+================
+Title: ${story.title}
+Author: ${story.author_name} (${story.author_email})
+Category: ${story.category}
+Status: ${story.status}
+Submitted: ${new Date(story.created_at).toLocaleString()}
+Word Count: ~${story.content.split(" ").length} words
+Reading Time: ${story.reading_time || 1} minutes
+
+Content:
+${story.content}
+            `;
+
+        alert(details);
+      }
+
+      function escapeHtml(text) {
+        const div = document.createElement("div");
+        div.textContent = text;
+        return div.innerHTML;
+      }
+
+      // Initialize when page loads
+      document.addEventListener("DOMContentLoaded", initializePage);
+    </script>
+  </body>
+</html>

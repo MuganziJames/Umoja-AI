@@ -67,19 +67,23 @@ class StoriesManager {
     try {
       this.showLoading(true);
 
+      console.log("🔍 Loading stories with filters:", filters);
+
       const result = await window.UmojaDB?.getStories(filters);
 
       if (result?.success) {
-        this.stories = result.stories;
+        this.stories = result.stories || [];
+        console.log(`✅ Loaded ${this.stories.length} stories`);
         this.filterStories();
         this.displayStories();
         this.updateStoryCount();
       } else {
+        console.error("❌ Failed to load stories:", result?.error);
         this.showError("Failed to load stories. Please try again later.");
       }
     } catch (error) {
       console.error("Error loading stories:", error);
-      this.showError("Error loading stories.");
+      this.showError("Error loading stories: " + error.message);
     } finally {
       this.showLoading(false);
     }

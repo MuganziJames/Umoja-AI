@@ -3,19 +3,29 @@
 
 class AIServices {
   constructor() {
-    // OpenRouter configuration (hardcoded from .env for simplicity)
-    this.OPENROUTER_API_KEY =
-      "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";
+    // ⚠️ SECURITY: API key removed for security - AI features temporarily disabled
+    // TODO: Implement proper environment variable handling or server-side API calls
+    this.OPENROUTER_API_KEY = null; // REMOVED FOR SECURITY
 
     this.PRIMARY_MODEL = "deepseek/deepseek-r1-0528-qwen3-8b"; // DeepSeek R1 0528 Qwen3 8B (free)
     this.BACKUP_MODEL = "meta-llama/llama-4-maverick:free"; // Meta Llama 4 Maverick (free)
     this.BASE_URL = "https://openrouter.ai/api/v1";
 
-    console.log("✅ AI Services initialized successfully");
+    this.AI_ENABLED = false; // Disabled until proper key management is implemented
+
+    console.log(
+      "⚠️ AI Services initialized with AI features DISABLED for security"
+    );
   }
 
   // Make OpenRouter API call with fallback model and rate limiting
   async makeOpenRouterCall(messages, options = {}) {
+    // AI features disabled for security - return safe fallback
+    if (!this.AI_ENABLED || !this.OPENROUTER_API_KEY) {
+      console.warn("🔒 AI features disabled for security");
+      throw new Error("AI features temporarily disabled for security reasons");
+    }
+
     const {
       model = this.PRIMARY_MODEL,
       maxTokens = 200,
@@ -74,8 +84,26 @@ class AIServices {
     }
   }
 
-  // Content moderation using AI
+  // Content moderation using AI (fallback to simple word filtering)
   async moderateContent(text) {
+    if (!this.AI_ENABLED) {
+      // Simple fallback moderation using keyword filtering
+      const harmfulPatterns = [
+        /\b(hate|violence|threat|kill|die|suicide)\b/i,
+        /\b(f\*\*k|sh\*t|damn|hell)\b/i, // Add more patterns as needed
+      ];
+
+      const flagged = harmfulPatterns.some((pattern) => pattern.test(text));
+
+      return {
+        flagged: flagged,
+        categories: flagged ? ["potential-harmful-content"] : [],
+        reason: flagged
+          ? "Content contains potentially harmful language"
+          : null,
+      };
+    }
+
     try {
       const messages = [
         {
@@ -111,8 +139,48 @@ Text to analyze: "${text}"`,
     }
   }
 
-  // Automatic story categorization
+  // Automatic story categorization (fallback to keyword-based)
   async categorizeStory(title, content) {
+    if (!this.AI_ENABLED) {
+      // Simple keyword-based categorization fallback
+      const text = (title + " " + content).toLowerCase();
+
+      if (
+        text.includes("mental") ||
+        text.includes("depression") ||
+        text.includes("anxiety") ||
+        text.includes("therapy") ||
+        text.includes("counseling") ||
+        text.includes("wellbeing")
+      ) {
+        return "mental-health";
+      }
+
+      if (
+        text.includes("gender") ||
+        text.includes("women") ||
+        text.includes("equality") ||
+        text.includes("discrimination") ||
+        text.includes("feminist") ||
+        text.includes("sexism")
+      ) {
+        return "gender-issues";
+      }
+
+      if (
+        text.includes("justice") ||
+        text.includes("rights") ||
+        text.includes("activism") ||
+        text.includes("protest") ||
+        text.includes("inequality") ||
+        text.includes("fairness")
+      ) {
+        return "social-justice";
+      }
+
+      return "community"; // Default category
+    }
+
     const messages = [
       {
         role: "user",

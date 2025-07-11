@@ -106,20 +106,27 @@ if (!initializeSupabase()) {
   ); // Check every 100ms first 20 times, then every 200ms
 }
 
-// Database table names
+// Database table names (matching schema.sql)
 const TABLES = {
   STORIES: "stories",
-  USERS: "users",
+  USER_PROFILES: "user_profiles",
   CATEGORIES: "categories",
   STORY_ANALYTICS: "story_analytics",
+  STORY_DRAFTS: "story_drafts",
+  COMMENTS: "comments",
+  LIKES: "likes",
+  BOOKMARKS: "bookmarks",
+  TAGS: "tags",
+  STORY_TAGS: "story_tags",
 };
 
-// Story status constants
+// Story status constants (must match schema enum values exactly)
 const STORY_STATUS = {
   DRAFT: "draft",
-  PENDING: "pending_review",
+  PENDING: "pending_review", // Fixed: matches schema enum
   APPROVED: "approved",
   REJECTED: "rejected",
+  ARCHIVED: "archived", // Added missing status from schema
 };
 
 // Export for use in other files

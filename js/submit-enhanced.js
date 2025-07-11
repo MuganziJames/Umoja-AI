@@ -118,16 +118,37 @@ function updateCharacterCount() {
   }
 }
 
-// Enhanced form submission with AI and backend
+// Enhanced form submission with comprehensive error handling
 async function handleSubmission(e) {
   e.preventDefault();
 
-  if (!validateForm()) return;
+  console.log("🚀 Form submission started");
+
+  if (!validateForm()) {
+    console.log("❌ Form validation failed");
+    return;
+  }
 
   // Show loading state
-  setButtonLoading(submitBtn, "Processing...");
+  setButtonLoading(submitBtn, "Submitting Story...");
 
   try {
+    // Wait for database manager to be ready
+    if (!window.UmojaDB) {
+      console.log("⏳ Waiting for database manager...");
+      window.UmojaDB = await window.DatabaseManager.waitForConfigAndCreate();
+    }
+
+    // Check authentication
+    const user = await window.UmojaDB.getCurrentUser();
+    if (!user) {
+      throw new Error(
+        "You must be signed in to submit a story. Please sign in first."
+      );
+    }
+
+    console.log("✅ User authenticated:", user.email);
+
     // Collect form data
     const formData = new FormData(storyForm);
     const storyData = {
@@ -135,30 +156,109 @@ async function handleSubmission(e) {
       content: formData.get("story-content"),
       authorName: formData.get("full-name"),
       category: formData.get("story-category"),
+      isAnonymous: false,
     };
+
+    console.log("📋 Collected form data:", storyData);
+
+    // Final validation
+    if (!storyData.title?.trim()) {
+      throw new Error("Story title is required");
+    }
+    if (!storyData.content?.trim()) {
+      throw new Error("Story content is required");
+    }
+    if (!storyData.authorName?.trim()) {
+      throw new Error("Author name is required");
+    }
+    if (!storyData.category) {
+      throw new Error("Please select a category");
+    }
 
     // Handle file upload if present
     if (fileInput?.files[0]) {
-      const uploadResult = await window.UmojaDB?.uploadFile(fileInput.files[0]);
-      if (uploadResult?.success) {
-        storyData.imageUrl = uploadResult.publicURL;
+      try {
+        console.log("📎 Uploading file...");
+        const uploadResult = await window.UmojaDB?.uploadFile(
+          fileInput.files[0]
+        );
+        if (uploadResult?.success) {
+          storyData.imageUrl = uploadResult.publicURL;
+          console.log("✅ File uploaded:", uploadResult.publicURL);
+        }
+      } catch (uploadError) {
+        console.warn("⚠️ File upload failed:", uploadError);
+        showNotification(
+          "File upload failed, but story will still be submitted",
+          "warning"
+        );
       }
     }
 
-    // Submit to database with AI processing
-    const result = await window.UmojaDB?.submitStory(storyData);
+    console.log("🚀 Submitting to database...");
+
+    // Submit to database
+    const result = await window.UmojaDB.submitStory(storyData);
+
+    console.log("📝 Submission result:", result);
 
     if (result?.success) {
-      showSuccessState(result.story);
+      console.log("✅ Story published successfully!");
+      showNotification(
+        "Story published successfully! It is now live on the website.",
+        "success"
+      );
+
+      // Track successful submission
+      try {
+        await window.UmojaDB.supabase.from("story_analytics").insert([
+          {
+            story_id: result.story.id,
+            user_id: user.id,
+            event_type: "publication",
+            created_at: new Date().toISOString(),
+          },
+        ]);
+      } catch (analyticsError) {
+        console.warn("Analytics tracking failed:", analyticsError);
+      }
+
+      // Clear draft and redirect to success page
       clearLocalDraft();
+
+      // Redirect to success page with story ID
+      setTimeout(() => {
+        window.location.href = `success.html?story=${result.story.id}`;
+      }, 1500);
     } else {
-      throw new Error(result?.error || "Submission failed");
+      throw new Error(result?.error || "Submission failed for unknown reason");
     }
   } catch (error) {
-    console.error("Submission error:", error);
-    showNotification("Error submitting story: " + error.message, "error");
+    console.error("❌ Submission error:", error);
+    let errorMessage = error.message;
+
+    // Provide user-friendly error messages
+    if (errorMessage.includes("auth")) {
+      errorMessage = "Please sign in to submit your story.";
+    } else if (
+      errorMessage.includes("network") ||
+      errorMessage.includes("fetch")
+    ) {
+      errorMessage =
+        "Network error. Please check your connection and try again.";
+    } else if (
+      errorMessage.includes("database") ||
+      errorMessage.includes("insert")
+    ) {
+      errorMessage = "Database error. Please try again in a moment.";
+    }
+
+    showNotification(`Error: ${errorMessage}`, "error");
   } finally {
-    resetButtonState(submitBtn, "Submit Story");
+    resetButtonState(
+      submitBtn,
+      '<i class="fas fa-paper-plane"></i> Submit Your Story'
+    );
   }
 }
 
@@ -368,6 +468,14 @@ function validateForm() {
   const title = document.getElementById("story-title")?.value.trim();
   const content = storyContent?.value.trim();
   const authorName = document.getElementById("full-name")?.value.trim();
+  const category = document.getElementById("story-category")?.value;
+
+  console.log("🔍 Validating form:", {
+    title: !!title,
+    content: !!content,
+    authorName: !!authorName,
+    category: !!category,
+  });
 
   if (!title) {
     showNotification("Please enter a story title.", "error");
@@ -400,6 +508,19 @@ function validateForm() {
     return false;
   }
 
+  if (!category) {
+    showNotification("Please select a category for your story.", "error");
+    return false;
+  }
+
+  // Check consent checkbox
+  const consentCheckbox = document.getElementById("consent");
+  if (consentCheckbox && !consentCheckbox.checked) {
+    showNotification("Please consent to having your story published.", "error");
+    return false;
+  }
+
+  console.log("✅ Form validation passed");
   return true;
 }
 
@@ -428,12 +549,19 @@ function highlightElement(element, duration = 2000) {
 }
 
 function showSuccessState(story) {
+  console.log("🎉 Showing success state for story:", story);
+
   if (storyForm) storyForm.style.display = "none";
   if (submissionSuccess) submissionSuccess.classList.remove("hidden");
 
   // Show AI insights if available
   if (story?.sentiment_data) {
     showSubmissionInsights(story);
+  }
+
+  // Scroll to success message
+  if (submissionSuccess) {
+    submissionSuccess.scrollIntoView({ behavior: "smooth" });
   }
 }
 
