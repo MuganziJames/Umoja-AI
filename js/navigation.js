@@ -51,12 +51,20 @@ class NavigationManager {
 
   async updateNavigationState() {
     try {
+      if (!this.db || !this.db.isInitialized) {
+        console.log('⏳ Database not ready for auth check');
+        return;
+      }
+
       const userResult = await this.db.getCurrentUser();
+      console.log('🔍 Auth check result:', userResult);
       
-      if (userResult.success && userResult.user) {
-        this.currentUser = userResult.user;
+      if (userResult) {
+        console.log('✅ User is authenticated, showing profile button');
+        this.currentUser = userResult;
         this.showProfileButton();
       } else {
+        console.log('❌ User not authenticated, showing sign-in button');
         this.currentUser = null;
         this.showSignInButton();
       }
@@ -74,14 +82,19 @@ class NavigationManager {
 
   showSignInButton() {
     if (this.authNavItem) {
+      console.log('🔄 Updating navigation to show sign-in button');
       this.authNavItem.innerHTML = `
         <a href="${this.getAuthPath()}" class="btn outline">Sign In</a>
       `;
+      console.log('✅ Sign-in button displayed');
+    } else {
+      console.log('❌ Cannot show sign-in button - missing authNavItem');
     }
   }
 
   showProfileButton() {
     if (this.authNavItem && this.currentUser) {
+      console.log('🔄 Updating navigation to show profile button');
       const userData = this.currentUser.user_metadata || {};
       const displayName = userData.name || userData.firstName || this.currentUser.email.split('@')[0];
       
@@ -103,6 +116,9 @@ class NavigationManager {
           </div>
         </div>
       `;
+      console.log('✅ Profile button displayed');
+    } else {
+      console.log('❌ Cannot show profile button - missing authNavItem or currentUser');
     }
   }
 
@@ -187,6 +203,12 @@ class NavigationManager {
     }
   }
 
+  // Manual trigger for testing
+  async forceNavigationUpdate() {
+    console.log('🔧 Manual navigation update triggered');
+    await this.updateNavigationState();
+  }
+
   // Close dropdown when clicking outside
   closeDropdownOnOutsideClick() {
     document.addEventListener('click', (event) => {
@@ -211,7 +233,14 @@ class NavigationManager {
       }
     });
 
-    // Periodically check auth state (every 5 seconds when page is visible)
+    // Listen for sign-in events specifically
+    window.addEventListener('userSignedIn', async (event) => {
+      console.log('🔔 User signed in event received');
+      this.currentUser = event.detail.user;
+      this.showProfileButton();
+    });
+
+    // Periodically check auth state (every 3 seconds when page is visible)
     let authCheckInterval;
     
     const startAuthCheck = () => {
@@ -219,7 +248,7 @@ class NavigationManager {
         if (document.visibilityState === 'visible') {
           await this.updateNavigationState();
         }
-      }, 5000);
+      }, 3000); // Reduced from 5 seconds to 3 seconds
     };
 
     const stopAuthCheck = () => {
@@ -253,8 +282,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Add a small delay to ensure all scripts are loaded
   setTimeout(async () => {
     navManager = new NavigationManager();
+    window.navManager = navManager; // Make it globally accessible
     await navManager.initialize();
     navManager.closeDropdownOnOutsideClick();
     navManager.setupAuthStateListener();
+    console.log('✅ Navigation manager ready and globally accessible');
   }, 100);
 });

@@ -180,6 +180,16 @@ class AuthManager {
       if (result.success) {
         this.showNotification("Welcome back! Redirecting...", "success");
 
+        // Immediately notify navigation manager about auth state change
+        if (window.navManager) {
+          await window.navManager.updateNavigationState();
+        }
+        
+        // Also dispatch custom event for other listeners
+        window.dispatchEvent(new CustomEvent('userSignedIn', {
+          detail: { user: result.user }
+        }));
+
         // Redirect after brief delay
         setTimeout(() => {
           const returnUrl =
