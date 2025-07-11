@@ -1,0 +1,205 @@
+// Global Navigation Manager
+class NavigationManager {
+  constructor() {
+    this.currentUser = null;
+    this.authNavItem = null;
+  }
+
+  async initialize() {
+    try {
+      console.log('🔄 Initializing NavigationManager...');
+      
+      // Find the auth navigation item
+      this.authNavItem = document.getElementById('auth-nav-item');
+      
+      if (!this.authNavItem) {
+        // If there's no auth-nav-item, this might be a page that doesn't need dynamic nav
+        console.log('⚠️ No auth-nav-item found, skipping navigation update');
+        return;
+      }
+
+      // Wait for database to be ready
+      if (!window.UmojaDB) {
+        await this.waitForDatabase();
+      }
+
+      this.db = window.UmojaDB;
+      
+      // Check current authentication status
+      await this.updateNavigationState();
+      
+      console.log('✅ NavigationManager initialized successfully');
+    } catch (error) {
+      console.error('❌ NavigationManager initialization failed:', error);
+      // Fall back to showing sign in button
+      this.showSignInButton();
+    }
+  }
+
+  async waitForDatabase(maxAttempts = 30) {
+    for (let i = 0; i < maxAttempts; i++) {
+      if (window.UmojaDB && window.UmojaDB.isInitialized) {
+        return;
+      }
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    throw new Error('Database not available');
+  }
+
+  async updateNavigationState() {
+    try {
+      const userResult = await this.db.getCurrentUser();
+      
+      if (userResult.success && userResult.user) {
+        this.currentUser = userResult.user;
+        this.showProfileButton();
+      } else {
+        this.currentUser = null;
+        this.showSignInButton();
+      }
+    } catch (error) {
+      console.error('Error checking auth state:', error);
+      this.showSignInButton();
+    }
+  }
+
+  showSignInButton() {
+    if (this.authNavItem) {
+      this.authNavItem.innerHTML = `
+        <a href="${this.getAuthPath()}" class="btn outline">Sign In</a>
+      `;
+    }
+  }
+
+  showProfileButton() {
+    if (this.authNavItem && this.currentUser) {
+      const userData = this.currentUser.user_metadata || {};
+      const displayName = userData.name || userData.firstName || this.currentUser.email.split('@')[0];
+      const initials = this.getInitials(displayName);
+      
+      this.authNavItem.innerHTML = `
+        <div class="profile-dropdown">
+          <button class="btn outline profile-btn" onclick="navManager.toggleProfileDropdown()">
+            <span class="profile-avatar-small">${initials}</span>
+            <span class="profile-name">${displayName}</span>
+            <i class="fas fa-chevron-down"></i>
+          </button>
+          <div class="profile-dropdown-menu" id="profile-dropdown-menu">
+            <a href="${this.getProfilePath()}" class="dropdown-item">
+              <i class="fas fa-user"></i> Profile
+            </a>
+            <a href="${this.getSubmitPath()}" class="dropdown-item">
+              <i class="fas fa-plus"></i> Write Story
+            </a>
+            <button class="dropdown-item" onclick="navManager.logout()">
+              <i class="fas fa-sign-out-alt"></i> Logout
+            </button>
+          </div>
+        </div>
+      `;
+    }
+  }
+
+  getInitials(name) {
+    return name
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase())
+      .slice(0, 2)
+      .join('');
+  }
+
+  getAuthPath() {
+    // Determine the correct path to auth.html based on current page
+    const currentPath = window.location.pathname;
+    if (currentPath.includes('/pages/')) {
+      return 'auth.html';
+    } else {
+      return 'pages/auth.html';
+    }
+  }
+
+  getProfilePath() {
+    // Determine the correct path to profile.html based on current page
+    const currentPath = window.location.pathname;
+    if (currentPath.includes('/pages/')) {
+      return 'profile.html';
+    } else {
+      return 'pages/profile.html';
+    }
+  }
+
+  getSubmitPath() {
+    // Determine the correct path to submit.html based on current page
+    const currentPath = window.location.pathname;
+    if (currentPath.includes('/pages/')) {
+      return 'submit.html';
+    } else {
+      return 'pages/submit.html';
+    }
+  }
+
+  toggleProfileDropdown() {
+    const dropdown = document.getElementById('profile-dropdown-menu');
+    if (dropdown) {
+      dropdown.classList.toggle('show');
+    }
+  }
+
+  async logout() {
+    if (!confirm('Are you sure you want to logout?')) {
+      return;
+    }
+
+    try {
+      const result = await this.db.signOut();
+      if (result.success) {
+        this.currentUser = null;
+        this.showSignInButton();
+        
+        // Redirect to home page if on profile page
+        if (window.location.pathname.includes('profile.html')) {
+          window.location.href = this.getHomePath();
+        } else {
+          // Just update the navigation
+          this.updateNavigationState();
+        }
+      } else {
+        alert('Failed to logout: ' + result.error);
+      }
+    } catch (error) {
+      console.error('Error during logout:', error);
+      alert('Failed to logout');
+    }
+  }
+
+  getHomePath() {
+    const currentPath = window.location.pathname;
+    if (currentPath.includes('/pages/')) {
+      return '../index.html';
+    } else {
+      return 'index.html';
+    }
+  }
+
+  // Close dropdown when clicking outside
+  closeDropdownOnOutsideClick() {
+    document.addEventListener('click', (event) => {
+      const dropdown = document.getElementById('profile-dropdown-menu');
+      const profileBtn = document.querySelector('.profile-btn');
+      
+      if (dropdown && !profileBtn?.contains(event.target)) {
+        dropdown.classList.remove('show');
+      }
+    });
+  }
+}
+
+// Global instance
+let navManager;
+
+// Initialize navigation manager when DOM is loaded
+document.addEventListener('DOMContentLoaded', async () => {
+  navManager = new NavigationManager();
+  await navManager.initialize();
+  navManager.closeDropdownOnOutsideClick();
+});

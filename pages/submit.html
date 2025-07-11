@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Submit Your Story - Voices of Change</title>
+    <link rel="stylesheet" href="../css/style.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <link rel="stylesheet" href="../css/submit.css" />
+  </head>
+  <body>
+    <header>
+      <div class="container">
+        <div class="logo">
+          <h1>Voices of Change</h1>
+          <p class="tagline">Amplifying stories that matter</p>
+        </div>
+        <nav>
+          <ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="stories.html">Stories</a></li>
+            <li><a href="submit.html" class="active">Submit Your Story</a></li>
+            <li><a href="about.html">About Umoja</a></li>
+            <li><a href="contact.html">Contact</a></li>
+            <li id="auth-nav-item">
+              <a href="auth.html" class="btn outline">Sign In</a>
+            </li>
+          </ul>
+        </nav>
+        <div class="mobile-nav-toggle">
+          <i class="fas fa-bars"></i>
+        </div>
+      </div>
+    </header>
+
+    <section class="page-header">
+      <div class="container">
+        <h1>Submit Your Story</h1>
+        <p>Share your experiences and inspire others</p>
+      </div>
+    </section>
+
+    <section class="submission-guidelines">
+      <div class="container">
+        <div class="guidelines-content">
+          <h2>Submission Guidelines</h2>
+          <p>
+            Before submitting your story, please take a moment to review our
+            guidelines:
+          </p>
+          <ul>
+            <li>
+              <i class="fas fa-check"></i> Stories should be authentic and based
+              on personal experiences.
+            </li>
+            <li>
+              <i class="fas fa-check"></i> Stories must relate to mental health,
+              gender issues, social justice, or community building.
+            </li>
+            <li>
+              <i class="fas fa-check"></i> Stories should be between 500-3000
+              characters (approximately 100-600 words).
+            </li>
+            <li>
+              <i class="fas fa-check"></i> Respect the privacy of others in your
+              story. Change names if necessary.
+            </li>
+            <li>
+              <i class="fas fa-check"></i> Be mindful of sensitive content and
+              trigger warnings.
+            </li>
+          </ul>
+          <p>
+            Our editorial team will review all submissions. We may make minor
+            edits for clarity, but we will always preserve the essence of your
+            story.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="submission-form">
+      <div class="container">
+        <form id="story-submission-form">
+          <div class="form-group">
+            <label for="full-name"
+              >Your Name <span class="required">*</span></label
+            >
+            <input type="text" id="full-name" name="full-name" required />
+            <small
+              >This will be displayed with your story. Use a pseudonym if you
+              prefer.</small
+            >
+          </div>
+
+          <div class="form-group">
+            <label for="email"
+              >Email Address <span class="required">*</span></label
+            >
+            <input type="email" id="email" name="email" required />
+            <small
+              >We'll use this to contact you about your submission. It won't be
+              shared publicly.</small
+            >
+          </div>
+
+          <div class="form-group">
+            <label for="story-category"
+              >Category <span class="required">*</span></label
+            >
+            <select id="story-category" name="story-category" required>
+              <option value="">Select a category</option>
+              <option value="mental-health">Mental Health</option>
+              <option value="gender-issues">Gender Issues</option>
+              <option value="social-justice">Social Justice</option>
+              <option value="community">Community</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="story-title"
+              >Story Title <span class="required">*</span></label
+            >
+            <input type="text" id="story-title" name="story-title" required />
+          </div>
+
+          <div class="form-group">
+            <label for="story-content"
+              >Your Story <span class="required">*</span></label
+            >
+            <textarea
+              id="story-content"
+              name="story-content"
+              rows="10"
+              required
+            ></textarea>
+            <div class="character-count">
+              <span id="current-count">0</span>/<span id="max-count">3000</span>
+              characters
+              <span id="word-count">(0 words)</span>
+            </div>
+            <div class="character-warning hidden" id="char-warning">
+              Your story exceeds the 3000 character limit. Please shorten it
+              before submitting.
+            </div>
+
+            <!-- AI-Enhanced Features -->
+            <div class="ai-features">
+              <button
+                type="button"
+                class="btn ai-btn"
+                id="ai-suggestions"
+                title="Get AI writing suggestions"
+              >
+                <i class="fas fa-lightbulb"></i> Get AI Suggestions
+              </button>
+              <button
+                type="button"
+                class="btn ai-btn"
+                id="auto-categorize"
+                title="Auto-categorize your story"
+              >
+                <i class="fas fa-tags"></i> Auto-Categorize
+              </button>
+            </div>
+
+            <!-- Content Moderation Indicator -->
+            <div
+              id="content-moderation"
+              class="content-moderation-indicator"
+              style="display: none"
+            ></div>
+
+            <!-- AI Suggestions Panel -->
+            <div
+              id="ai-suggestions-panel"
+              class="ai-suggestions-panel"
+              style="display: none"
+            ></div>
+          </div>
+
+          <div class="form-group">
+            <label>Add a Featured Image (Optional)</label>
+            <div class="file-upload">
+              <input
+                type="file"
+                id="story-image"
+                name="story-image"
+                accept="image/*"
+              />
+              <label for="story-image" class="file-upload-label">
+                <i class="fas fa-cloud-upload-alt"></i> Choose an image
+              </label>
+              <span id="file-name">No file chosen</span>
+            </div>
+            <small
+              >Images help readers connect with your story. Max file size:
+              5MB.</small
+            >
+          </div>
+
+          <div class="form-group checkbox-group">
+            <input type="checkbox" id="consent" name="consent" required />
+            <label for="consent"
+              >I consent to having my story published on Voices of Change
+              <span class="required">*</span></label
+            >
+          </div>
+
+          <div class="form-group checkbox-group">
+            <input type="checkbox" id="newsletter" name="newsletter" />
+            <label for="newsletter"
+              >Subscribe to our newsletter for updates on new stories</label
+            >
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="btn primary" id="submit-story">
+              <i class="fas fa-paper-plane"></i> Submit Your Story
+            </button>
+            <button type="button" class="btn outline" id="save-draft">
+              <i class="fas fa-save"></i> Save as Draft
+            </button>
+          </div>
+        </form>
+
+        <div class="submission-success hidden" id="submission-success">
+          <div class="success-content">
+            <i class="fas fa-check-circle"></i>
+            <h2>Thank You for Your Submission!</h2>
+            <p>
+              Your story has been received and processed with AI assistance. Our
+              editorial team will review it and get back to you within 3-5
+              business days.
+            </p>
+
+            <!-- AI Processing Status -->
+            <div class="ai-processing-status">
+              <h4><i class="fas fa-robot"></i> AI Processing Complete</h4>
+              <ul>
+                <li><i class="fas fa-check"></i> Content moderation passed</li>
+                <li>
+                  <i class="fas fa-check"></i> Story categorized automatically
+                </li>
+                <li>
+                  <i class="fas fa-check"></i> Sentiment analysis completed
+                </li>
+                <li>
+                  <i class="fas fa-check"></i> Reading recommendations generated
+                </li>
+              </ul>
+            </div>
+
+            <div class="success-actions">
+              <a href="stories.html" class="btn secondary">
+                <i class="fas fa-book-open"></i> Read Other Stories
+              </a>
+              <button class="btn outline" id="submit-another">
+                <i class="fas fa-plus"></i> Submit Another Story
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      <div class="container">
+        <div class="footer-content">
+          <div class="footer-about">
+            <h3>Voices of Change</h3>
+            <p>
+              A platform dedicated to amplifying stories that drive social
+              impact and inspire change.
+            </p>
+          </div>
+          <div class="footer-links">
+            <h3>Quick Links</h3>
+            <ul>
+              <li><a href="../index.html">Home</a></li>
+              <li><a href="stories.html">Stories</a></li>
+              <li><a href="submit.html">Submit</a></li>
+              <li><a href="about.html">About</a></li>
+              <li><a href="contact.html">Contact</a></li>
+            </ul>
+          </div>
+          <div class="footer-social">
+            <h3>Connect With Us</h3>
+            <div class="social-icons">
+              <a href="#" aria-label="Facebook"
+                ><i class="fab fa-facebook-f"></i
+              ></a>
+              <a href="#" aria-label="Twitter"
+                ><i class="fab fa-twitter"></i
+              ></a>
+              <a href="#" aria-label="Instagram"
+                ><i class="fab fa-instagram"></i
+              ></a>
+              <a href="#" aria-label="LinkedIn"
+                ><i class="fab fa-linkedin-in"></i
+              ></a>
+            </div>
+          </div>
+        </div>
+        <div class="footer-bottom">
+          <p>
+            &copy; <span class="current-year">2023</span> Voices of Change. All
+            Rights Reserved.
+          </p>
+        </div>
+      </div>
+    </footer>
+
+    <!-- Supabase v2 -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+
+    <!-- Core Scripts - order matters! -->
+    <script src="../js/global-error-handler.js"></script>
+    <script src="../js/input-sanitizer.js"></script>
+    <script src="../js/supabase-config.js"></script>
+    <script src="../js/ai-services.js"></script>
+    <script src="../js/database-manager.js"></script>
+    <script src="../js/navigation.js"></script>
+    <script src="../js/main.js"></script>
+    <!-- Check authentication before loading submit features -->
+    <script>
+      document.addEventListener("DOMContentLoaded", async () => {
+        try {
+          // Wait for UmojaConfig to be available
+          let retries = 0;
+          while (!window.UmojaConfig && retries < 50) {
+            await new Promise((resolve) => setTimeout(resolve, 100));
+            retries++;
+          }
+
+          if (!window.UmojaConfig) {
+            throw new Error("UmojaConfig not available");
+          }
+
+          // Initialize database manager
+          if (!window.UmojaDB) {
+            window.UmojaDB =
+              await window.DatabaseManager.waitForConfigAndCreate();
+          }
+
+          // Check if user is authenticated
+          const user = await window.UmojaDB.getCurrentUser();
+          if (!user) {
+            // User not authenticated, redirect to auth page
+            window.location.href = `auth.html?return=${encodeURIComponent(
+              window.location.pathname
+            )}`;
+            return;
+          }
+
+          // User is authenticated, load the submit script
+          const script = document.createElement("script");
+          script.src = "../js/submit-enhanced.js";
+          document.body.appendChild(script);
+        } catch (error) {
+          console.error("Auth check error:", error);
+          // Redirect to auth page on error
+          window.location.href = `auth.html?return=${encodeURIComponent(
+            window.location.pathname
+          )}`;
+        }
+      });
+    </script>
+  </body>
+</html>

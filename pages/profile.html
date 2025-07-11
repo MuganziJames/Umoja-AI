@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Profile - Voices of Change</title>
+    <link rel="stylesheet" href="../css/style.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <style>
+      .profile-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: var(--spacing-xl);
+      }
+
+      .profile-header {
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        color: white;
+        padding: var(--spacing-2xl);
+        border-radius: var(--radius-lg);
+        margin-bottom: var(--spacing-xl);
+        text-align: center;
+      }
+
+      .profile-avatar {
+        width: 120px;
+        height: 120px;
+        border-radius: var(--radius-full);
+        margin: 0 auto var(--spacing-md);
+        background-color: rgba(255, 255, 255, 0.2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 3rem;
+        border: 4px solid rgba(255, 255, 255, 0.3);
+      }
+
+      .profile-info h1 {
+        margin-bottom: var(--spacing-sm);
+        color: white;
+      }
+
+      .profile-stats {
+        display: flex;
+        justify-content: center;
+        gap: var(--spacing-xl);
+        margin-top: var(--spacing-lg);
+      }
+
+      .stat-item {
+        text-align: center;
+      }
+
+      .stat-number {
+        font-size: var(--font-size-2xl);
+        font-weight: 700;
+        display: block;
+      }
+
+      .stat-label {
+        font-size: var(--font-size-sm);
+        opacity: 0.9;
+      }
+
+      .profile-content {
+        display: grid;
+        grid-template-columns: 1fr 2fr;
+        gap: var(--spacing-xl);
+        align-items: start;
+      }
+
+      .profile-sidebar {
+        background: var(--bg-color);
+        border-radius: var(--radius-lg);
+        padding: var(--spacing-xl);
+        box-shadow: var(--shadow-md);
+      }
+
+      .profile-actions {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-md);
+        margin-bottom: var(--spacing-xl);
+      }
+
+      .profile-main {
+        background: var(--bg-color);
+        border-radius: var(--radius-lg);
+        padding: var(--spacing-xl);
+        box-shadow: var(--shadow-md);
+      }
+
+      .articles-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: var(--spacing-xl);
+        border-bottom: 2px solid var(--border-color);
+        padding-bottom: var(--spacing-md);
+      }
+
+      .articles-tabs {
+        display: flex;
+        gap: var(--spacing-md);
+      }
+
+      .tab-btn {
+        padding: var(--spacing-sm) var(--spacing-lg);
+        border: none;
+        background: transparent;
+        color: var(--text-muted);
+        cursor: pointer;
+        border-radius: var(--radius-md);
+        font-weight: 600;
+        transition: all var(--transition-fast);
+      }
+
+      .tab-btn.active {
+        background: var(--primary-color);
+        color: white;
+      }
+
+      .tab-content {
+        display: none;
+      }
+
+      .tab-content.active {
+        display: block;
+      }
+
+      .article-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: var(--spacing-lg);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-md);
+        margin-bottom: var(--spacing-md);
+        transition: all var(--transition-fast);
+      }
+
+      .article-item:hover {
+        box-shadow: var(--shadow-md);
+        transform: translateY(-2px);
+      }
+
+      .article-info h3 {
+        margin-bottom: var(--spacing-xs);
+        color: var(--text-color);
+      }
+
+      .article-meta {
+        font-size: var(--font-size-sm);
+        color: var(--text-muted);
+        display: flex;
+        gap: var(--spacing-md);
+        align-items: center;
+      }
+
+      .status-badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: var(--radius-full);
+        font-size: var(--font-size-sm);
+        font-weight: 600;
+      }
+
+      .status-published {
+        background-color: var(--success);
+        color: white;
+      }
+
+      .status-draft {
+        background-color: var(--warning);
+        color: #333;
+      }
+
+      .status-pending {
+        background-color: var(--info);
+        color: white;
+      }
+
+      .article-actions {
+        display: flex;
+        gap: var(--spacing-sm);
+      }
+
+      .action-btn {
+        padding: var(--spacing-xs) var(--spacing-sm);
+        border: none;
+        border-radius: var(--radius-sm);
+        cursor: pointer;
+        font-size: var(--font-size-sm);
+        transition: all var(--transition-fast);
+      }
+
+      .edit-btn {
+        background-color: var(--primary-color);
+        color: white;
+      }
+
+      .delete-btn {
+        background-color: var(--danger);
+        color: white;
+      }
+
+      .view-btn {
+        background-color: var(--secondary-color);
+        color: white;
+      }
+
+      .empty-state {
+        text-align: center;
+        padding: var(--spacing-2xl);
+        color: var(--text-muted);
+      }
+
+      .empty-state i {
+        font-size: 4rem;
+        margin-bottom: var(--spacing-lg);
+        color: var(--border-color);
+      }
+
+      @media (max-width: 768px) {
+        .profile-content {
+          grid-template-columns: 1fr;
+        }
+
+        .profile-stats {
+          flex-direction: column;
+          gap: var(--spacing-md);
+        }
+
+        .articles-header {
+          flex-direction: column;
+          gap: var(--spacing-md);
+          align-items: flex-start;
+        }
+
+        .article-item {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: var(--spacing-md);
+        }
+
+        .article-actions {
+          align-self: stretch;
+          justify-content: flex-end;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="container">
+        <div class="logo">
+          <h1>Voices of Change</h1>
+          <p class="tagline">Amplifying stories that matter</p>
+        </div>
+        <nav>
+          <ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="stories.html">Stories</a></li>
+            <li><a href="submit.html">Submit Your Story</a></li>
+            <li><a href="about.html">About Umoja</a></li>
+            <li><a href="contact.html">Contact</a></li>
+            <li id="auth-nav-item">
+              <!-- This will be populated by JavaScript -->
+            </li>
+          </ul>
+        </nav>
+        <div class="mobile-nav-toggle">
+          <i class="fas fa-bars"></i>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <div class="profile-container">
+        <div class="profile-header">
+          <div class="profile-avatar">
+            <i class="fas fa-user"></i>
+          </div>
+          <div class="profile-info">
+            <h1 id="profile-name">Loading...</h1>
+            <p id="profile-email">Loading...</p>
+            <div class="profile-stats">
+              <div class="stat-item">
+                <span class="stat-number" id="published-count">0</span>
+                <span class="stat-label">Published Stories</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-number" id="draft-count">0</span>
+                <span class="stat-label">Drafts</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-number" id="total-views">0</span>
+                <span class="stat-label">Total Views</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="profile-content">
+          <div class="profile-sidebar">
+            <div class="profile-actions">
+              <a href="submit.html" class="btn primary">
+                <i class="fas fa-plus"></i> Write New Story
+              </a>
+              <button class="btn outline" id="edit-profile-btn">
+                <i class="fas fa-edit"></i> Edit Profile
+              </button>
+              <button class="btn outline" id="logout-btn">
+                <i class="fas fa-sign-out-alt"></i> Logout
+              </button>
+            </div>
+
+            <div class="profile-details">
+              <h3>Profile Information</h3>
+              <div class="detail-item">
+                <strong>Member Since:</strong>
+                <span id="member-since">-</span>
+              </div>
+              <div class="detail-item">
+                <strong>Last Active:</strong>
+                <span id="last-active">-</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="profile-main">
+            <div class="articles-header">
+              <h2>My Articles</h2>
+              <div class="articles-tabs">
+                <button class="tab-btn active" data-tab="all">All</button>
+                <button class="tab-btn" data-tab="published">Published</button>
+                <button class="tab-btn" data-tab="drafts">Drafts</button>
+                <button class="tab-btn" data-tab="pending">Pending</button>
+              </div>
+            </div>
+
+            <div id="all-articles" class="tab-content active">
+              <div id="articles-list">
+                <!-- Articles will be loaded here -->
+              </div>
+            </div>
+
+            <div id="published-articles" class="tab-content">
+              <div id="published-list">
+                <!-- Published articles will be loaded here -->
+              </div>
+            </div>
+
+            <div id="draft-articles" class="tab-content">
+              <div id="drafts-list">
+                <!-- Draft articles will be loaded here -->
+              </div>
+            </div>
+
+            <div id="pending-articles" class="tab-content">
+              <div id="pending-list">
+                <!-- Pending articles will be loaded here -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <footer>
+      <div class="container">
+        <div class="footer-content">
+          <div class="footer-about">
+            <h3>Voices of Change</h3>
+            <p>
+              Amplifying stories that matter. A platform dedicated to sharing
+              experiences and driving social change.
+            </p>
+          </div>
+          <div class="footer-links">
+            <h3>Quick Links</h3>
+            <ul>
+              <li><a href="../index.html">Home</a></li>
+              <li><a href="stories.html">Stories</a></li>
+              <li><a href="submit.html">Submit Story</a></li>
+              <li><a href="about.html">About</a></li>
+              <li><a href="contact.html">Contact</a></li>
+            </ul>
+          </div>
+          <div class="footer-social">
+            <h3>Follow Us</h3>
+            <div class="social-icons">
+              <a href="#" aria-label="Facebook"><i class="fab fa-facebook"></i></a>
+              <a href="#" aria-label="Twitter"><i class="fab fa-twitter"></i></a>
+              <a href="#" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+              <a href="#" aria-label="LinkedIn"><i class="fab fa-linkedin"></i></a>
+            </div>
+          </div>
+        </div>
+        <div class="footer-bottom">
+          <p>&copy; 2025 Voices of Change. All rights reserved.</p>
+        </div>
+      </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="../js/global-error-handler.js"></script>
+    <script src="../js/input-sanitizer.js"></script>
+    <script src="../js/supabase-config.js"></script>
+    <script src="../js/database-manager.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/profile.js"></script>
+  </body>
+</html>

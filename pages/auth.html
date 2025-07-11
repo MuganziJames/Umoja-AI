@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sign In / Sign Up - Voices of Change</title>
+    <link rel="stylesheet" href="../css/style.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <style>
+      .auth-container {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(
+          135deg,
+          var(--primary-color),
+          var(--secondary-color)
+        );
+        padding: var(--spacing-md);
+      }
+
+      .auth-card {
+        background: white;
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-lg);
+        width: 100%;
+        max-width: 420px;
+        overflow: hidden;
+      }
+
+      .auth-header {
+        background: var(--primary-color);
+        color: white;
+        padding: var(--spacing-xl);
+        text-align: center;
+      }
+
+      .auth-header h1 {
+        margin: 0 0 var(--spacing-sm) 0;
+        font-size: var(--font-size-2xl);
+      }
+
+      .auth-header p {
+        margin: 0;
+        opacity: 0.9;
+        font-size: var(--font-size-sm);
+      }
+
+      .auth-tabs {
+        display: flex;
+        background: var(--bg-alt);
+      }
+
+      .auth-tab {
+        flex: 1;
+        padding: var(--spacing-md);
+        text-align: center;
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        font-weight: 600;
+        color: var(--text-muted);
+        transition: all var(--transition-fast);
+      }
+
+      .auth-tab.active {
+        background: white;
+        color: var(--primary-color);
+        border-bottom: 2px solid var(--primary-color);
+      }
+
+      .auth-content {
+        padding: var(--spacing-xl);
+      }
+
+      .auth-form {
+        display: none;
+      }
+
+      .auth-form.active {
+        display: block;
+      }
+
+      .form-group {
+        margin-bottom: var(--spacing-lg);
+      }
+
+      .form-group label {
+        display: block;
+        margin-bottom: var(--spacing-sm);
+        font-weight: 600;
+        color: var(--text-color);
+      }
+
+      .form-group input {
+        width: 100%;
+        padding: var(--spacing-md);
+        border: 2px solid var(--border-color);
+        border-radius: var(--radius-md);
+        font-family: var(--font-primary);
+        font-size: var(--font-size-base);
+        transition: border-color var(--transition-fast);
+      }
+
+      .form-group input:focus {
+        outline: none;
+        border-color: var(--primary-color);
+      }
+
+      .form-group input.error {
+        border-color: var(--danger);
+      }
+
+      .form-group .error-message {
+        color: var(--danger);
+        font-size: var(--font-size-sm);
+        margin-top: var(--spacing-xs);
+        display: none;
+      }
+
+      .form-group .help-text {
+        color: var(--text-muted);
+        font-size: var(--font-size-sm);
+        margin-top: var(--spacing-xs);
+      }
+
+      .auth-submit {
+        width: 100%;
+        padding: var(--spacing-sm) var(--spacing-md);
+        background: var(--primary-color);
+        color: white;
+        border: none;
+        border-radius: var(--radius-sm);
+        font-weight: 500;
+        font-size: var(--font-size-sm);
+        cursor: pointer;
+        transition: background-color var(--transition-fast);
+        margin-bottom: var(--spacing-md);
+        min-height: 42px;
+      }
+
+      .auth-submit:hover:not(:disabled) {
+        background: var(--primary-dark);
+      }
+
+      .auth-submit:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+
+      .auth-divider {
+        text-align: center;
+        margin: var(--spacing-lg) 0;
+        position: relative;
+        color: var(--text-muted);
+      }
+
+      .auth-divider::before {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 0;
+        right: 0;
+        height: 1px;
+        background: var(--border-color);
+        z-index: 1;
+      }
+
+      .auth-divider span {
+        background: white;
+        padding: 0 var(--spacing-md);
+        position: relative;
+        z-index: 2;
+      }
+
+      .oauth-buttons {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-sm);
+      }
+
+      .oauth-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: var(--spacing-sm);
+        padding: var(--spacing-md);
+        border: 2px solid var(--border-color);
+        border-radius: var(--radius-md);
+        background: white;
+        color: var(--text-color);
+        text-decoration: none;
+        font-weight: 600;
+        transition: all var(--transition-fast);
+      }
+
+      .oauth-btn:hover {
+        border-color: var(--primary-color);
+        color: var(--primary-color);
+      }
+
+      .auth-footer {
+        text-align: center;
+        padding-top: var(--spacing-lg);
+        border-top: 1px solid var(--border-color);
+        margin-top: var(--spacing-lg);
+      }
+
+      .auth-footer a {
+        color: var(--primary-color);
+        text-decoration: none;
+        font-weight: 600;
+      }
+
+      .auth-footer a:hover {
+        text-decoration: underline;
+      }
+
+      .loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.8);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+      }
+
+      .loading-spinner {
+        background: white;
+        padding: var(--spacing-xl);
+        border-radius: var(--radius-lg);
+        text-align: center;
+      }
+
+      .spinner {
+        width: 40px;
+        height: 40px;
+        border: 4px solid var(--border-color);
+        border-top: 4px solid var(--primary-color);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto var(--spacing-md);
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      .notification {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: var(--spacing-md) var(--spacing-lg);
+        border-radius: var(--radius-md);
+        color: white;
+        font-weight: 600;
+        z-index: 1001;
+        transform: translateX(400px);
+        transition: transform var(--transition-normal);
+      }
+
+      .notification.show {
+        transform: translateX(0);
+      }
+
+      .notification.success {
+        background: var(--success);
+      }
+
+      .notification.error {
+        background: var(--danger);
+      }
+
+      .back-to-site {
+        position: absolute;
+        top: var(--spacing-md);
+        left: var(--spacing-md);
+        color: white;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+        font-weight: 600;
+        opacity: 0.9;
+        transition: opacity var(--transition-fast);
+      }
+
+      .back-to-site:hover {
+        opacity: 1;
+        color: white;
+      }
+
+      @media (max-width: 480px) {
+        .auth-container {
+          padding: var(--spacing-sm);
+        }
+
+        .auth-content {
+          padding: var(--spacing-lg);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="auth-container">
+      <a href="../index.html" class="back-to-site">
+        <i class="fas fa-arrow-left"></i>
+        Back to Site
+      </a>
+
+      <div class="auth-card">
+        <div class="auth-header">
+          <h1>Welcome</h1>
+          <p>Join our community of voices for change</p>
+        </div>
+
+        <div class="auth-tabs">
+          <button class="auth-tab active" data-tab="signin">Sign In</button>
+          <button class="auth-tab" data-tab="signup">Sign Up</button>
+        </div>
+
+        <div class="auth-content">
+          <!-- Sign In Form -->
+          <form class="auth-form active" id="signin-form">
+            <div class="form-group">
+              <label for="signin-email">Email Address</label>
+              <input type="email" id="signin-email" name="email" required />
+              <div class="error-message"></div>
+            </div>
+
+            <div class="form-group">
+              <label for="signin-password">Password</label>
+              <input
+                type="password"
+                id="signin-password"
+                name="password"
+                required
+              />
+              <div class="error-message"></div>
+            </div>
+
+            <button type="submit" class="auth-submit">Sign In</button>
+
+            <div class="auth-divider">
+              <span>or continue with</span>
+            </div>
+
+            <div class="oauth-buttons">
+              <button type="button" class="oauth-btn" id="google-signin">
+                <i class="fab fa-google"></i>
+                Continue with Google
+              </button>
+            </div>
+
+            <div class="auth-footer">
+              <p>
+                Don't have an account?
+                <a href="#" data-switch="signup">Sign up here</a>
+              </p>
+              <p><a href="#" id="forgot-password">Forgot your password?</a></p>
+            </div>
+          </form>
+
+          <!-- Sign Up Form -->
+          <form class="auth-form" id="signup-form">
+            <div class="form-group">
+              <label for="signup-name">Full Name</label>
+              <input type="text" id="signup-name" name="fullName" required />
+              <div class="help-text">
+                This will be displayed with your stories
+              </div>
+              <div class="error-message"></div>
+            </div>
+
+            <div class="form-group">
+              <label for="signup-email">Email Address</label>
+              <input type="email" id="signup-email" name="email" required />
+              <div class="error-message"></div>
+            </div>
+
+            <div class="form-group">
+              <label for="signup-password">Password</label>
+              <input
+                type="password"
+                id="signup-password"
+                name="password"
+                required
+              />
+              <div class="help-text">Must be at least 8 characters long</div>
+              <div class="error-message"></div>
+            </div>
+
+            <div class="form-group">
+              <label for="signup-confirm">Confirm Password</label>
+              <input
+                type="password"
+                id="signup-confirm"
+                name="confirmPassword"
+                required
+              />
+              <div class="error-message"></div>
+            </div>
+
+            <button type="submit" class="auth-submit">Create Account</button>
+
+            <div class="auth-divider">
+              <span>or continue with</span>
+            </div>
+
+            <div class="oauth-buttons">
+              <button type="button" class="oauth-btn" id="google-signup">
+                <i class="fab fa-google"></i>
+                Continue with Google
+              </button>
+            </div>
+
+            <div class="auth-footer">
+              <p>
+                Already have an account?
+                <a href="#" data-switch="signin">Sign in here</a>
+              </p>
+              <p
+                style="font-size: var(--font-size-sm); color: var(--text-muted)"
+              >
+                By signing up, you agree to our terms of service and privacy
+                policy.
+              </p>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loading-overlay">
+      <div class="loading-spinner">
+        <div class="spinner"></div>
+        <p>Processing...</p>
+      </div>
+    </div>
+
+    <!-- Supabase v2 and Auth Scripts -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <!-- Debug script to check Supabase loading -->
+    <script>
+      console.log("🔍 Supabase debug check:", {
+        windowSupabase: typeof window.Supabase,
+        windowSupabaseLower: typeof window.supabase,
+        windowKeys: Object.keys(window).filter((key) =>
+          key.toLowerCase().includes("supa")
+        ),
+      });
+
+      // Immediate tab switching functionality (before auth manager loads)
+      document.addEventListener("DOMContentLoaded", () => {
+        console.log("🔄 Setting up immediate tab handlers...");
+
+        function switchTabImmediate(tabName) {
+          console.log("🔄 Switching to tab immediately:", tabName);
+
+          // Update tab buttons
+          document.querySelectorAll(".auth-tab").forEach((tab) => {
+            const isActive = tab.dataset.tab === tabName;
+            tab.classList.toggle("active", isActive);
+            console.log(
+              `Tab ${tab.dataset.tab}: ${isActive ? "active" : "inactive"}`
+            );
+          });
+
+          // Update forms
+          document.querySelectorAll(".auth-form").forEach((form) => {
+            const isActive = form.id === `${tabName}-form`;
+            form.classList.toggle("active", isActive);
+            console.log(`Form ${form.id}: ${isActive ? "active" : "inactive"}`);
+          });
+        }
+
+        // Add immediate click handlers
+        document.querySelectorAll(".auth-tab").forEach((tab) => {
+          tab.addEventListener("click", (e) => {
+            console.log(`🖱️ Tab clicked immediately: ${e.target.dataset.tab}`);
+            switchTabImmediate(e.target.dataset.tab);
+          });
+        });
+
+        console.log("✅ Immediate tab handlers attached");
+
+        // Add immediate form handlers to prevent default submission
+        const signinForm = document.getElementById("signin-form");
+        const signupForm = document.getElementById("signup-form");
+
+        if (signinForm) {
+          signinForm.addEventListener("submit", (e) => {
+            e.preventDefault();
+            console.log(
+              "🚫 Sign-in form submission prevented (waiting for auth manager)"
+            );
+
+            // Show a message to user
+            const formData = new FormData(e.target);
+            const email = formData.get("email");
+            console.log("📧 Attempted sign-in for:", email);
+
+            // You can add a visual indicator here
+            alert(
+              "Authentication system is still loading. Please wait a moment and try again."
+            );
+          });
+        }
+
+        if (signupForm) {
+          signupForm.addEventListener("submit", (e) => {
+            e.preventDefault();
+            console.log(
+              "🚫 Sign-up form submission prevented (waiting for auth manager)"
+            );
+            alert(
+              "Authentication system is still loading. Please wait a moment and try again."
+            );
+          });
+        }
+      });
+    </script>
+    <script src="../js/global-error-handler.js"></script>
+    <script src="../js/input-sanitizer.js"></script>
+    <script src="../js/supabase-config.js"></script>
+    <script src="../js/database-manager.js"></script>
+
+    <!-- Initialize Auth Manager after everything else loads -->
+    <script>
+      // Wait for all dependencies to load before initializing auth
+      document.addEventListener("DOMContentLoaded", async () => {
+        try {
+          console.log("🔄 Starting auth page initialization...");
+
+          // First, ensure Supabase library is loaded
+          let supabaseAttempts = 0;
+          const maxSupabaseAttempts = 50;
+
+          while (
+            !(window.Supabase || window.supabase) &&
+            supabaseAttempts < maxSupabaseAttempts
+          ) {
+            await new Promise((resolve) => setTimeout(resolve, 100));
+            supabaseAttempts++;
+            console.log(
+              `⏳ Waiting for Supabase library... (${supabaseAttempts}/${maxSupabaseAttempts})`
+            );
+          }
+
+          if (!(window.Supabase || window.supabase)) {
+            throw new Error("Supabase library failed to load");
+          }
+
+          console.log("✅ Supabase library loaded");
+
+          // Wait for UmojaConfig to be available with retries
+          let retries = 0;
+          const maxRetries = 100; // Increased from 50
+
+          while (!window.UmojaConfig && retries < maxRetries) {
+            await new Promise((resolve) => setTimeout(resolve, 200)); // Increased from 100ms
+            retries++;
+            console.log(
+              `⏳ Waiting for UmojaConfig... (${retries}/${maxRetries})`
+            );
+          }
+
+          if (!window.UmojaConfig || !window.UmojaConfig.supabase) {
+            throw new Error("UmojaConfig not available after retries");
+          }
+
+          console.log("✅ UmojaConfig loaded successfully");
+
+          // Initialize database manager
+          window.UmojaDB =
+            await window.DatabaseManager.waitForConfigAndCreate();
+          console.log("✅ Database manager initialized");
+
+          // Load and initialize auth manager
+          const script = document.createElement("script");
+          script.src = "../js/auth.js";
+          script.onload = async () => {
+            try {
+              // Wait a bit for the script to fully load
+              await new Promise((resolve) => setTimeout(resolve, 100));
+
+              if (window.AuthManager && window.AuthManager.initialize) {
+                window.authManager = await window.AuthManager.initialize();
+                console.log(
+                  "✅ Authentication system initialized successfully"
+                );
+              } else {
+                throw new Error("AuthManager.initialize not found");
+              }
+            } catch (authError) {
+              console.error("❌ Auth initialization failed:", authError);
+              window.GlobalErrorHandler?.reportError(authError);
+            }
+          };
+          script.onerror = () => {
+            console.error("❌ Failed to load auth.js");
+            window.GlobalErrorHandler?.reportError(
+              new Error("Failed to load auth script")
+            );
+          };
+          document.head.appendChild(script);
+        } catch (error) {
+          console.error("❌ Initialization failed:", error);
+          window.GlobalErrorHandler?.reportError(error);
+        }
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,297 @@
+/* About Page Specific Styles */
+
+/* Page Header - same style as stories.css but included here for completeness */
+.page-header {
+    background: linear-gradient(to right, var(--primary-dark), var(--primary-color));
+    color: white;
+    padding: var(--spacing-xl) 0;
+    text-align: center;
+}
+
+.page-header h1 {
+    color: white;
+    margin-bottom: var(--spacing-sm);
+}
+
+.page-header p {
+    font-size: var(--font-size-lg);
+    max-width: 700px;
+    margin: 0 auto;
+}
+
+/* Mission Section */
+.about-mission {
+    padding: var(--spacing-2xl) 0;
+}
+
+.mission-content {
+    max-width: 800px;
+    margin: 0 auto;
+    text-align: center;
+}
+
+.mission-statement {
+    font-size: var(--font-size-xl);
+    font-style: italic;
+    color: var(--primary-color);
+    margin-bottom: var(--spacing-lg);
+    font-weight: 500;
+    line-height: 1.5;
+}
+
+/* Values Section */
+.about-values {
+    padding: var(--spacing-2xl) 0;
+    background-color: var(--bg-alt);
+}
+
+.about-values h2 {
+    text-align: center;
+    margin-bottom: var(--spacing-xl);
+}
+
+.values-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: var(--spacing-lg);
+}
+
+.value-card {
+    background-color: var(--bg-color);
+    padding: var(--spacing-lg);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-md);
+    text-align: center;
+    transition: transform var(--transition-normal);
+}
+
+.value-card:hover {
+    transform: translateY(-5px);
+}
+
+.value-icon {
+    width: 80px;
+    height: 80px;
+    background-color: var(--primary-light);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto var(--spacing-md);
+}
+
+.value-icon i {
+    font-size: 2rem;
+}
+
+.value-card h3 {
+    color: var(--primary-color);
+    margin-bottom: var(--spacing-sm);
+}
+
+/* Team Section */
+.about-team {
+    padding: var(--spacing-2xl) 0;
+}
+
+.about-team h2 {
+    text-align: center;
+    margin-bottom: var(--spacing-xl);
+}
+
+.team-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: var(--spacing-xl);
+}
+
+.team-member {
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    box-shadow: var(--shadow-md);
+    transition: transform var(--transition-normal);
+}
+
+.team-member:hover {
+    transform: translateY(-5px);
+}
+
+.member-image {
+    height: 280px;
+    overflow: hidden;
+}
+
+.member-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.team-member h3 {
+    margin: var(--spacing-md) var(--spacing-md) var(--spacing-xs);
+    color: var(--primary-color);
+}
+
+.member-role {
+    font-weight: 600;
+    margin: 0 var(--spacing-md) var(--spacing-sm);
+    color: var(--text-muted);
+}
+
+.member-bio {
+    margin: 0 var(--spacing-md) var(--spacing-md);
+    font-size: var(--font-size-base);
+}
+
+/* Impact Section */
+.about-impact {
+    padding: var(--spacing-2xl) 0;
+    background-color: var(--bg-alt);
+}
+
+.impact-content {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.impact-content h2 {
+    text-align: center;
+    margin-bottom: var(--spacing-xl);
+}
+
+.impact-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--spacing-lg);
+    margin-bottom: var(--spacing-xl);
+}
+
+.stat {
+    text-align: center;
+    padding: var(--spacing-md);
+    background-color: var(--bg-color);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+}
+
+.stat-number {
+    display: block;
+    font-size: var(--font-size-3xl);
+    font-weight: 700;
+    color: var(--primary-color);
+    margin-bottom: var(--spacing-xs);
+}
+
+.stat-label {
+    font-size: var(--font-size-base);
+    color: var(--text-muted);
+}
+
+blockquote {
+    margin: var(--spacing-xl) 0;
+    padding: var(--spacing-lg);
+    border-left: 5px solid var(--primary-color);
+    background-color: var(--bg-color);
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+    font-style: italic;
+    font-size: var(--font-size-lg);
+}
+
+blockquote cite {
+    display: block;
+    margin-top: var(--spacing-sm);
+    font-style: normal;
+    font-size: var(--font-size-base);
+    color: var(--text-muted);
+    text-align: right;
+}
+
+/* Get Involved Section */
+.get-involved {
+    padding: var(--spacing-2xl) 0;
+}
+
+.get-involved h2 {
+    text-align: center;
+    margin-bottom: var(--spacing-xl);
+}
+
+.involvement-options {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: var(--spacing-xl);
+}
+
+.option-card {
+    text-align: center;
+    padding: var(--spacing-xl);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-md);
+    background-color: var(--bg-color);
+    transition: transform var(--transition-normal);
+}
+
+.option-card:hover {
+    transform: translateY(-5px);
+}
+
+.option-card i {
+    font-size: 3rem;
+    color: var(--primary-color);
+    margin-bottom: var(--spacing-md);
+}
+
+.option-card h3 {
+    margin-bottom: var(--spacing-sm);
+    color: var(--primary-color);
+}
+
+.option-card p {
+    margin-bottom: var(--spacing-md);
+}
+
+.social-share {
+    display: flex;
+    justify-content: center;
+    gap: var(--spacing-md);
+    margin-top: var(--spacing-md);
+}
+
+.social-share a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background-color: var(--primary-light);
+    color: white;
+    border-radius: 50%;
+    transition: background-color var(--transition-normal);
+}
+
+.social-share a:hover {
+    background-color: var(--primary-color);
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .mission-statement {
+        font-size: var(--font-size-lg);
+    }
+    
+    .impact-stats {
+        grid-template-columns: 1fr 1fr;
+    }
+    
+    blockquote {
+        padding: var(--spacing-md);
+        font-size: var(--font-size-base);
+    }
+}
+
+@media (max-width: 576px) {
+    .impact-stats {
+        grid-template-columns: 1fr;
+    }
+} 

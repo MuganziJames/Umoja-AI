@@ -1,0 +1,39 @@
+{
+  "name": "umoja-voices-of-change",
+  "version": "1.0.0",
+  "description": "A platform dedicated to amplifying stories that drive social impact and inspire change",
+  "main": "index.html",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "serve": "vite preview --port 3000"
+  },
+  "keywords": [
+    "social-impact",
+    "storytelling",
+    "mental-health",
+    "social-justice",
+    "community",
+    "ai-powered"
+  ],
+  "author": "Umoja Team",
+  "license": "MIT",
+  "devDependencies": {
+    "vite": "^5.0.0"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/umoja-voices-of-change.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/umoja-voices-of-change/issues"
+  },
+  "homepage": "https://yourusername.github.io/umoja-voices-of-change"
+}
