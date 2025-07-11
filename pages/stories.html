@@ -1,291 +1,386 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Stories - Voices of Change</title>
-    <link rel="stylesheet" href="../css/style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="../css/stories.css">
-</head>
-<body>
+    <link rel="stylesheet" href="../css/style.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <link rel="stylesheet" href="../css/stories.css" />
+  </head>
+  <body>
     <header>
-        <div class="container">
-            <div class="logo">
-                <h1>Voices of Change</h1>
-                <p class="tagline">Amplifying stories that matter</p>
-            </div>
-            <nav>
-                <ul>
-                    <li><a href="../index.html">Home</a></li>
-                    <li><a href="stories.html" class="active">Stories</a></li>
-                    <li><a href="submit.html">Submit Your Story</a></li>
-                    <li><a href="about.html">About Umoja</a></li>
-                    <li><a href="contact.html">Contact</a></li>
-                    <li id="auth-nav-item">
-                        <a href="auth.html" class="btn outline">Sign In</a>
-                    </li>
-                </ul>
-            </nav>
-            <div class="mobile-nav-toggle">
-                <i class="fas fa-bars"></i>
-            </div>
+      <div class="container">
+        <div class="logo">
+          <h1>Voices of Change</h1>
+          <p class="tagline">Amplifying stories that matter</p>
         </div>
+        <nav>
+          <ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="stories.html" class="active">Stories</a></li>
+            <li><a href="submit.html">Submit Your Story</a></li>
+            <li><a href="about.html">About Umoja</a></li>
+            <li><a href="contact.html">Contact</a></li>
+            <li id="auth-nav-item">
+              <a href="auth.html" class="btn outline">Sign In</a>
+            </li>
+          </ul>
+        </nav>
+        <div class="mobile-nav-toggle">
+          <i class="fas fa-bars"></i>
+        </div>
+      </div>
     </header>
 
     <section class="page-header">
-        <div class="container">
-            <h1>Stories</h1>
-            <p>Explore powerful voices of change from around the world</p>
-        </div>
+      <div class="container">
+        <h1>Stories</h1>
+        <p>Explore powerful voices of change from around the world</p>
+      </div>
     </section>
 
     <section class="search-filter">
-        <div class="container">
-            <div class="search-box">
-                <input type="text" id="story-search" placeholder="Search stories...">
-                <button type="button" id="search-btn"><i class="fas fa-search"></i></button>
-            </div>
-            
-            <div class="filter-container">
-                <div class="filter-by">
-                    <label for="category-filter">Filter by:</label>
-                    <select id="category-filter">
-                        <option value="all">All Categories</option>
-                        <option value="mental-health">Mental Health</option>
-                        <option value="gender-issues">Gender Issues</option>
-                        <option value="social-justice">Social Justice</option>
-                        <option value="community">Community</option>
-                    </select>
-                </div>
-                
-                <div class="sort-by">
-                    <label for="sort-stories">Sort by:</label>
-                    <select id="sort-stories">
-                        <option value="latest">Latest</option>
-                        <option value="oldest">Oldest</option>
-                        <option value="popular">Most Popular</option>
-                    </select>
-                </div>
-            </div>
-            
-            <div class="saved-stories-toggle">
-                <label class="toggle-switch">
-                    <input type="checkbox" id="saved-stories-toggle">
-                    <span class="slider round"></span>
-                </label>
-                <span>Show saved stories only</span>
-            </div>
+      <div class="container">
+        <div class="search-box">
+          <input
+            type="text"
+            id="story-search"
+            placeholder="Search stories..."
+          />
+          <button type="button" id="search-btn">
+            <i class="fas fa-search"></i>
+          </button>
         </div>
+
+        <div class="filter-container">
+          <div class="filter-by">
+            <label for="category-filter">Filter by:</label>
+            <select id="category-filter">
+              <option value="all">All Categories</option>
+              <option value="mental-health">Mental Health</option>
+              <option value="gender-issues">Gender Issues</option>
+              <option value="social-justice">Social Justice</option>
+              <option value="community">Community</option>
+            </select>
+          </div>
+
+          <div class="sort-by">
+            <label for="sort-stories">Sort by:</label>
+            <select id="sort-stories">
+              <option value="latest">Latest</option>
+              <option value="oldest">Oldest</option>
+              <option value="popular">Most Popular</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="saved-stories-toggle">
+          <label class="toggle-switch">
+            <input type="checkbox" id="saved-stories-toggle" />
+            <span class="slider round"></span>
+          </label>
+          <span>Show saved stories only</span>
+        </div>
+      </div>
     </section>
 
     <section class="stories-container">
-        <div class="container">
-            <div class="stories-grid" id="stories-grid">
-                <article class="story-card" id="story1" data-category="mental-health" data-date="2023-10-15" data-popular="4">
-                    <div class="story-image">
-                        <img src="../images/story1.jpg" alt="Mental Health Awareness">
-                        <div class="save-story">
-                            <i class="far fa-bookmark"></i>
-                        </div>
-                    </div>
-                    <div class="story-content">
-                        <span class="category">Mental Health</span>
-                        <h3>Finding Light in Darkness</h3>
-                        <p>My journey through depression and the community that helped me heal.</p>
-                        <div class="story-meta">
-                            <span class="author">By Sarah Johnson</span>
-                            <span class="date">Oct 15, 2023</span>
-                        </div>
-                        <a href="#" class="read-more">Read Full Story</a>
-                    </div>
-                </article>
-
-                <article class="story-card" id="story2" data-category="gender-issues" data-date="2023-11-03" data-popular="5">
-                    <div class="story-image">
-                        <img src="../images/story2.jpg" alt="Gender Equality">
-                        <div class="save-story">
-                            <i class="far fa-bookmark"></i>
-                        </div>
-                    </div>
-                    <div class="story-content">
-                        <span class="category">Gender Equality</span>
-                        <h3>Breaking the Glass Ceiling</h3>
-                        <p>How I navigated barriers in a male-dominated industry.</p>
-                        <div class="story-meta">
-                            <span class="author">By Amina Patel</span>
-                            <span class="date">Nov 3, 2023</span>
-                        </div>
-                        <a href="#" class="read-more">Read Full Story</a>
-                    </div>
-                </article>
-
-                <article class="story-card" id="story3" data-category="social-justice" data-date="2023-09-22" data-popular="3">
-                    <div class="story-image">
-                        <img src="../images/story3.jpg" alt="Social Justice">
-                        <div class="save-story">
-                            <i class="far fa-bookmark"></i>
-                        </div>
-                    </div>
-                    <div class="story-content">
-                        <span class="category">Social Justice</span>
-                        <h3>Standing for What's Right</h3>
-                        <p>My experience advocating for community resources in underserved areas.</p>
-                        <div class="story-meta">
-                            <span class="author">By Michael Torres</span>
-                            <span class="date">Sep 22, 2023</span>
-                        </div>
-                        <a href="#" class="read-more">Read Full Story</a>
-                    </div>
-                </article>
-
-                <article class="story-card" id="story4" data-category="community" data-date="2023-12-05" data-popular="2">
-                    <div class="story-image">
-                        <img src="../images/story4.jpg" alt="Community Building">
-                        <div class="save-story">
-                            <i class="far fa-bookmark"></i>
-                        </div>
-                    </div>
-                    <div class="story-content">
-                        <span class="category">Community</span>
-                        <h3>Building Bridges, Not Walls</h3>
-                        <p>How our neighborhood came together to create a shared garden that feeds families.</p>
-                        <div class="story-meta">
-                            <span class="author">By David Chen</span>
-                            <span class="date">Dec 5, 2023</span>
-                        </div>
-                        <a href="#" class="read-more">Read Full Story</a>
-                    </div>
-                </article>
-
-                <article class="story-card" id="story5" data-category="mental-health" data-date="2023-08-18" data-popular="1">
-                    <div class="story-image">
-                        <img src="../images/story5.jpg" alt="Anxiety Support">
-                        <div class="save-story">
-                            <i class="far fa-bookmark"></i>
-                        </div>
-                    </div>
-                    <div class="story-content">
-                        <span class="category">Mental Health</span>
-                        <h3>Calming the Storm Within</h3>
-                        <p>Tools and techniques that helped me manage anxiety and panic attacks.</p>
-                        <div class="story-meta">
-                            <span class="author">By James Wilson</span>
-                            <span class="date">Aug 18, 2023</span>
-                        </div>
-                        <a href="#" class="read-more">Read Full Story</a>
-                    </div>
-                </article>
-
-                <article class="story-card" id="story6" data-category="gender-issues" data-date="2023-07-30" data-popular="7">
-                    <div class="story-image">
-                        <img src="../images/story6.jpg" alt="Gender Identity">
-                        <div class="save-story">
-                            <i class="far fa-bookmark"></i>
-                        </div>
-                    </div>
-                    <div class="story-content">
-                        <span class="category">Gender Issues</span>
-                        <h3>Finding My True Self</h3>
-                        <p>My journey of self-discovery and acceptance as a non-binary person.</p>
-                        <div class="story-meta">
-                            <span class="author">By Alex Rivera</span>
-                            <span class="date">Jul 30, 2023</span>
-                        </div>
-                        <a href="#" class="read-more">Read Full Story</a>
-                    </div>
-                </article>
-
-                <article class="story-card" id="story7" data-category="social-justice" data-date="2023-11-25" data-popular="6">
-                    <div class="story-image">
-                        <img src="../images/story7.jpg" alt="Education Equity">
-                        <div class="save-story">
-                            <i class="far fa-bookmark"></i>
-                        </div>
-                    </div>
-                    <div class="story-content">
-                        <span class="category">Social Justice</span>
-                        <h3>Equal Education for All</h3>
-                        <p>How we fought for better resources in our underfunded school district.</p>
-                        <div class="story-meta">
-                            <span class="author">By Lydia Okonkwo</span>
-                            <span class="date">Nov 25, 2023</span>
-                        </div>
-                        <a href="#" class="read-more">Read Full Story</a>
-                    </div>
-                </article>
-
-                <article class="story-card" id="story8" data-category="community" data-date="2023-10-02" data-popular="8">
-                    <div class="story-image">
-                        <img src="../images/story8.jpg" alt="Elder Care">
-                        <div class="save-story">
-                            <i class="far fa-bookmark"></i>
-                        </div>
-                    </div>
-                    <div class="story-content">
-                        <span class="category">Community</span>
-                        <h3>Honoring Our Elders</h3>
-                        <p>Creating an intergenerational program that connects seniors with youth.</p>
-                        <div class="story-meta">
-                            <span class="author">By Maria Gonzalez</span>
-                            <span class="date">Oct 2, 2023</span>
-                        </div>
-                        <a href="#" class="read-more">Read Full Story</a>
-                    </div>
-                </article>
+      <div class="container">
+        <div class="stories-grid" id="stories-grid">
+          <article
+            class="story-card"
+            id="story1"
+            data-category="mental-health"
+            data-date="2023-10-15"
+            data-popular="4"
+          >
+            <div class="story-image">
+              <img src="../images/story1.jpg" alt="Mental Health Awareness" />
+              <div class="save-story">
+                <i class="far fa-bookmark"></i>
+              </div>
             </div>
-
-            <div class="no-results hidden">
-                <h3>No stories found</h3>
-                <p>Try adjusting your search criteria or browse all stories.</p>
-                <button id="reset-filters" class="btn secondary">Reset Filters</button>
+            <div class="story-content">
+              <span class="category">Mental Health</span>
+              <h3>Finding Light in Darkness</h3>
+              <p>
+                My journey through depression and the community that helped me
+                heal.
+              </p>
+              <div class="story-meta">
+                <span class="author">By Sarah Johnson</span>
+                <span class="date">Oct 15, 2023</span>
+              </div>
+              <a href="#" class="read-more">Read Full Story</a>
             </div>
+          </article>
 
-            <div class="pagination">
-                <button class="pagination-btn" id="prev-page" disabled>
-                    <i class="fas fa-chevron-left"></i> Previous
-                </button>
-                <div class="page-numbers">
-                    <span class="current-page">1</span> / <span class="total-pages">1</span>
-                </div>
-                <button class="pagination-btn" id="next-page" disabled>
-                    Next <i class="fas fa-chevron-right"></i>
-                </button>
+          <article
+            class="story-card"
+            id="story2"
+            data-category="gender-issues"
+            data-date="2023-11-03"
+            data-popular="5"
+          >
+            <div class="story-image">
+              <img src="../images/story2.jpg" alt="Gender Equality" />
+              <div class="save-story">
+                <i class="far fa-bookmark"></i>
+              </div>
             </div>
+            <div class="story-content">
+              <span class="category">Gender Equality</span>
+              <h3>Breaking the Glass Ceiling</h3>
+              <p>How I navigated barriers in a male-dominated industry.</p>
+              <div class="story-meta">
+                <span class="author">By Amina Patel</span>
+                <span class="date">Nov 3, 2023</span>
+              </div>
+              <a href="#" class="read-more">Read Full Story</a>
+            </div>
+          </article>
+
+          <article
+            class="story-card"
+            id="story3"
+            data-category="social-justice"
+            data-date="2023-09-22"
+            data-popular="3"
+          >
+            <div class="story-image">
+              <img src="../images/story3.jpg" alt="Social Justice" />
+              <div class="save-story">
+                <i class="far fa-bookmark"></i>
+              </div>
+            </div>
+            <div class="story-content">
+              <span class="category">Social Justice</span>
+              <h3>Standing for What's Right</h3>
+              <p>
+                My experience advocating for community resources in underserved
+                areas.
+              </p>
+              <div class="story-meta">
+                <span class="author">By Michael Torres</span>
+                <span class="date">Sep 22, 2023</span>
+              </div>
+              <a href="#" class="read-more">Read Full Story</a>
+            </div>
+          </article>
+
+          <article
+            class="story-card"
+            id="story4"
+            data-category="community"
+            data-date="2023-12-05"
+            data-popular="2"
+          >
+            <div class="story-image">
+              <img src="../images/story4.jpg" alt="Community Building" />
+              <div class="save-story">
+                <i class="far fa-bookmark"></i>
+              </div>
+            </div>
+            <div class="story-content">
+              <span class="category">Community</span>
+              <h3>Building Bridges, Not Walls</h3>
+              <p>
+                How our neighborhood came together to create a shared garden
+                that feeds families.
+              </p>
+              <div class="story-meta">
+                <span class="author">By David Chen</span>
+                <span class="date">Dec 5, 2023</span>
+              </div>
+              <a href="#" class="read-more">Read Full Story</a>
+            </div>
+          </article>
+
+          <article
+            class="story-card"
+            id="story5"
+            data-category="mental-health"
+            data-date="2023-08-18"
+            data-popular="1"
+          >
+            <div class="story-image">
+              <img src="../images/story5.jpg" alt="Anxiety Support" />
+              <div class="save-story">
+                <i class="far fa-bookmark"></i>
+              </div>
+            </div>
+            <div class="story-content">
+              <span class="category">Mental Health</span>
+              <h3>Calming the Storm Within</h3>
+              <p>
+                Tools and techniques that helped me manage anxiety and panic
+                attacks.
+              </p>
+              <div class="story-meta">
+                <span class="author">By James Wilson</span>
+                <span class="date">Aug 18, 2023</span>
+              </div>
+              <a href="#" class="read-more">Read Full Story</a>
+            </div>
+          </article>
+
+          <article
+            class="story-card"
+            id="story6"
+            data-category="gender-issues"
+            data-date="2023-07-30"
+            data-popular="7"
+          >
+            <div class="story-image">
+              <img src="../images/story6.jpg" alt="Gender Identity" />
+              <div class="save-story">
+                <i class="far fa-bookmark"></i>
+              </div>
+            </div>
+            <div class="story-content">
+              <span class="category">Gender Issues</span>
+              <h3>Finding My True Self</h3>
+              <p>
+                My journey of self-discovery and acceptance as a non-binary
+                person.
+              </p>
+              <div class="story-meta">
+                <span class="author">By Alex Rivera</span>
+                <span class="date">Jul 30, 2023</span>
+              </div>
+              <a href="#" class="read-more">Read Full Story</a>
+            </div>
+          </article>
+
+          <article
+            class="story-card"
+            id="story7"
+            data-category="social-justice"
+            data-date="2023-11-25"
+            data-popular="6"
+          >
+            <div class="story-image">
+              <img src="../images/story7.jpg" alt="Education Equity" />
+              <div class="save-story">
+                <i class="far fa-bookmark"></i>
+              </div>
+            </div>
+            <div class="story-content">
+              <span class="category">Social Justice</span>
+              <h3>Equal Education for All</h3>
+              <p>
+                How we fought for better resources in our underfunded school
+                district.
+              </p>
+              <div class="story-meta">
+                <span class="author">By Lydia Okonkwo</span>
+                <span class="date">Nov 25, 2023</span>
+              </div>
+              <a href="#" class="read-more">Read Full Story</a>
+            </div>
+          </article>
+
+          <article
+            class="story-card"
+            id="story8"
+            data-category="community"
+            data-date="2023-10-02"
+            data-popular="8"
+          >
+            <div class="story-image">
+              <img src="../images/story8.jpg" alt="Elder Care" />
+              <div class="save-story">
+                <i class="far fa-bookmark"></i>
+              </div>
+            </div>
+            <div class="story-content">
+              <span class="category">Community</span>
+              <h3>Honoring Our Elders</h3>
+              <p>
+                Creating an intergenerational program that connects seniors with
+                youth.
+              </p>
+              <div class="story-meta">
+                <span class="author">By Maria Gonzalez</span>
+                <span class="date">Oct 2, 2023</span>
+              </div>
+              <a href="#" class="read-more">Read Full Story</a>
+            </div>
+          </article>
         </div>
+
+        <div class="no-results hidden">
+          <h3>No stories found</h3>
+          <p>Try adjusting your search criteria or browse all stories.</p>
+          <button id="reset-filters" class="btn secondary">
+            Reset Filters
+          </button>
+        </div>
+
+        <div class="pagination">
+          <button class="pagination-btn" id="prev-page" disabled>
+            <i class="fas fa-chevron-left"></i> Previous
+          </button>
+          <div class="page-numbers">
+            <span class="current-page">1</span> /
+            <span class="total-pages">1</span>
+          </div>
+          <button class="pagination-btn" id="next-page" disabled>
+            Next <i class="fas fa-chevron-right"></i>
+          </button>
+        </div>
+      </div>
     </section>
 
     <footer>
-        <div class="container">
-            <div class="footer-content">
-                <div class="footer-about">
-                    <h3>Voices of Change</h3>
-                    <p>A platform dedicated to amplifying stories that drive social impact and inspire change.</p>
-                </div>
-                <div class="footer-links">
-                    <h3>Quick Links</h3>
-                    <ul>
-                        <li><a href="../index.html">Home</a></li>
-                        <li><a href="stories.html">Stories</a></li>
-                        <li><a href="submit.html">Submit</a></li>
-                        <li><a href="about.html">About</a></li>
-                        <li><a href="contact.html">Contact</a></li>
-                    </ul>
-                </div>
-                <div class="footer-social">
-                    <h3>Connect With Us</h3>
-                    <div class="social-icons">
-                        <a href="#" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
-                        <a href="#" aria-label="Twitter"><i class="fab fa-twitter"></i></a>
-                        <a href="#" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
-                        <a href="#" aria-label="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
-                    </div>
-                </div>
+      <div class="container">
+        <div class="footer-content">
+          <div class="footer-about">
+            <h3>Voices of Change</h3>
+            <p>
+              A platform dedicated to amplifying stories that drive social
+              impact and inspire change.
+            </p>
+          </div>
+          <div class="footer-links">
+            <h3>Quick Links</h3>
+            <ul>
+              <li><a href="../index.html">Home</a></li>
+              <li><a href="stories.html">Stories</a></li>
+              <li><a href="submit.html">Submit</a></li>
+              <li><a href="about.html">About</a></li>
+              <li><a href="contact.html">Contact</a></li>
+            </ul>
+          </div>
+          <div class="footer-social">
+            <h3>Connect With Us</h3>
+            <div class="social-icons">
+              <a href="#" aria-label="Facebook"
+                ><i class="fab fa-facebook-f"></i
+              ></a>
+              <a href="#" aria-label="Twitter"
+                ><i class="fab fa-twitter"></i
+              ></a>
+              <a href="#" aria-label="Instagram"
+                ><i class="fab fa-instagram"></i
+              ></a>
+              <a href="#" aria-label="LinkedIn"
+                ><i class="fab fa-linkedin-in"></i
+              ></a>
             </div>
-            <div class="footer-bottom">
-                <p>&copy; <span class="current-year">2023</span> Voices of Change. All Rights Reserved.</p>
-            </div>
+          </div>
         </div>
+        <div class="footer-bottom">
+          <p>
+            &copy; <span class="current-year">2023</span> Voices of Change. All
+            Rights Reserved.
+          </p>
+        </div>
+      </div>
     </footer>
 
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
@@ -295,20 +390,21 @@
     <script src="../js/database-manager.js"></script>
     <script>
       // Initialize database for stories page
-      document.addEventListener('DOMContentLoaded', async () => {
+      document.addEventListener("DOMContentLoaded", async () => {
         try {
           // Wait for UmojaConfig and DatabaseManager to be ready
           if (window.DatabaseManager && window.UmojaConfig) {
-            window.UmojaDB = await window.DatabaseManager.waitForConfigAndCreate();
-            console.log('✅ Database initialized for stories page');
+            window.UmojaDB =
+              await window.DatabaseManager.waitForConfigAndCreate();
+            console.log("✅ Database initialized for stories page");
           }
         } catch (error) {
-          console.error('❌ Database initialization failed:', error);
+          console.error("❌ Database initialization failed:", error);
         }
       });
     </script>
     <script src="../js/main.js"></script>
     <script src="../js/stories.js"></script>
     <script src="../js/navigation.js"></script>
-</body>
-</html> 
+  </body>
+</html>

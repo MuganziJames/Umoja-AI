@@ -419,9 +419,9 @@ class DatabaseManager {
 
       const { data, error } = await this.supabase
         .from(this.tables.STORIES)
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
+        .select("*")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false });
 
       if (error) throw error;
 
@@ -441,21 +441,21 @@ class DatabaseManager {
       if (userId) {
         const { data: story, error: fetchError } = await this.supabase
           .from(this.tables.STORIES)
-          .select('user_id')
-          .eq('id', storyId)
+          .select("user_id")
+          .eq("id", storyId)
           .single();
 
         if (fetchError) throw fetchError;
-        
+
         if (story.user_id !== userId) {
-          throw new Error('Unauthorized: You can only delete your own stories');
+          throw new Error("Unauthorized: You can only delete your own stories");
         }
       }
 
       const { error } = await this.supabase
         .from(this.tables.STORIES)
         .delete()
-        .eq('id', storyId);
+        .eq("id", storyId);
 
       if (error) throw error;
 
@@ -475,27 +475,28 @@ class DatabaseManager {
       if (userId) {
         const { data: story, error: fetchError } = await this.supabase
           .from(this.tables.STORIES)
-          .select('user_id')
-          .eq('id', storyId)
+          .select("user_id")
+          .eq("id", storyId)
           .single();
 
         if (fetchError) throw fetchError;
-        
+
         if (story.user_id !== userId) {
-          throw new Error('Unauthorized: You can only edit your own stories');
+          throw new Error("Unauthorized: You can only edit your own stories");
         }
       }
 
       // Sanitize input data
-      const sanitizedData = window.InputSanitizer.sanitizeStoryData(updatedData);
-      
+      const sanitizedData =
+        window.InputSanitizer.sanitizeStoryData(updatedData);
+
       // Add update timestamp
       sanitizedData.updated_at = new Date().toISOString();
 
       const { data, error } = await this.supabase
         .from(this.tables.STORIES)
         .update(sanitizedData)
-        .eq('id', storyId)
+        .eq("id", storyId)
         .select()
         .single();
 
@@ -515,8 +516,8 @@ class DatabaseManager {
 
       const { data, error } = await this.supabase
         .from(this.tables.STORIES)
-        .select('*')
-        .eq('id', storyId)
+        .select("*")
+        .eq("id", storyId)
         .single();
 
       if (error) throw error;

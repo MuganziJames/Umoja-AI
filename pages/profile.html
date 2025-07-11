@@ -17,7 +17,11 @@
       }
 
       .profile-header {
-        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        background: linear-gradient(
+          135deg,
+          var(--primary-color),
+          var(--secondary-color)
+        );
         color: white;
         padding: var(--spacing-2xl);
         border-radius: var(--radius-lg);
@@ -392,10 +396,18 @@
           <div class="footer-social">
             <h3>Follow Us</h3>
             <div class="social-icons">
-              <a href="#" aria-label="Facebook"><i class="fab fa-facebook"></i></a>
-              <a href="#" aria-label="Twitter"><i class="fab fa-twitter"></i></a>
-              <a href="#" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
-              <a href="#" aria-label="LinkedIn"><i class="fab fa-linkedin"></i></a>
+              <a href="#" aria-label="Facebook"
+                ><i class="fab fa-facebook"></i
+              ></a>
+              <a href="#" aria-label="Twitter"
+                ><i class="fab fa-twitter"></i
+              ></a>
+              <a href="#" aria-label="Instagram"
+                ><i class="fab fa-instagram"></i
+              ></a>
+              <a href="#" aria-label="LinkedIn"
+                ><i class="fab fa-linkedin"></i
+              ></a>
             </div>
           </div>
         </div>
@@ -413,14 +425,15 @@
     <script src="../js/database-manager.js"></script>
     <script>
       // Initialize database for profile page
-      document.addEventListener('DOMContentLoaded', async () => {
+      document.addEventListener("DOMContentLoaded", async () => {
         try {
           if (window.DatabaseManager && window.UmojaConfig) {
-            window.UmojaDB = await window.DatabaseManager.waitForConfigAndCreate();
-            console.log('✅ Database initialized for profile page');
+            window.UmojaDB =
+              await window.DatabaseManager.waitForConfigAndCreate();
+            console.log("✅ Database initialized for profile page");
           }
         } catch (error) {
-          console.error('❌ Database initialization failed:', error);
+          console.error("❌ Database initialization failed:", error);
         }
       });
     </script>
