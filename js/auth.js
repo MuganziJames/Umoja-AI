@@ -184,11 +184,13 @@ class AuthManager {
         if (window.navManager) {
           await window.navManager.updateNavigationState();
         }
-        
+
         // Also dispatch custom event for other listeners
-        window.dispatchEvent(new CustomEvent('userSignedIn', {
-          detail: { user: result.user }
-        }));
+        window.dispatchEvent(
+          new CustomEvent("userSignedIn", {
+            detail: { user: result.user },
+          })
+        );
 
         // Redirect after brief delay
         setTimeout(() => {
@@ -485,16 +487,18 @@ class AuthManager {
   async checkAuthStatus() {
     try {
       const user = await this.db.getCurrentUser();
-      if (user && user.success && user.user) {
+      if (user) {
         // User is already signed in
         // Only redirect if there's a specific return URL, not automatically
-        const returnUrl = new URLSearchParams(window.location.search).get("return");
+        const returnUrl = new URLSearchParams(window.location.search).get(
+          "return"
+        );
         if (returnUrl) {
-          console.log('User already authenticated, redirecting to:', returnUrl);
+          console.log("User already authenticated, redirecting to:", returnUrl);
           window.location.href = returnUrl;
         } else {
           // User is signed in but no return URL - just log it, don't redirect
-          console.log('User already authenticated, staying on auth page');
+          console.log("User already authenticated, staying on auth page");
         }
       }
     } catch (error) {
