@@ -18,8 +18,9 @@ class NavigationManager {
         return;
       }
 
-      // Wait for database to be ready
-      if (!window.UmojaDB) {
+      // Wait for database to be ready with more attempts
+      if (!window.UmojaDB || !window.UmojaDB.isInitialized) {
+        console.log('⏳ Waiting for database to be ready...');
         await this.waitForDatabase();
       }
 
@@ -36,12 +37,14 @@ class NavigationManager {
     }
   }
 
-  async waitForDatabase(maxAttempts = 30) {
+  async waitForDatabase(maxAttempts = 100) {
     for (let i = 0; i < maxAttempts; i++) {
       if (window.UmojaDB && window.UmojaDB.isInitialized) {
         return;
       }
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // Wait longer on initial attempts, then shorter intervals
+      const waitTime = i < 20 ? 200 : 100;
+      await new Promise(resolve => setTimeout(resolve, waitTime));
     }
     throw new Error('Database not available');
   }
@@ -199,7 +202,10 @@ let navManager;
 
 // Initialize navigation manager when DOM is loaded
 document.addEventListener('DOMContentLoaded', async () => {
-  navManager = new NavigationManager();
-  await navManager.initialize();
-  navManager.closeDropdownOnOutsideClick();
+  // Add a small delay to ensure all scripts are loaded
+  setTimeout(async () => {
+    navManager = new NavigationManager();
+    await navManager.initialize();
+    navManager.closeDropdownOnOutsideClick();
+  }, 100);
 });

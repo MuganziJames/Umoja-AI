@@ -293,8 +293,22 @@
     <script src="../js/input-sanitizer.js"></script>
     <script src="../js/supabase-config.js"></script>
     <script src="../js/database-manager.js"></script>
-    <script src="../js/navigation.js"></script>
+    <script>
+      // Initialize database for stories page
+      document.addEventListener('DOMContentLoaded', async () => {
+        try {
+          // Wait for UmojaConfig and DatabaseManager to be ready
+          if (window.DatabaseManager && window.UmojaConfig) {
+            window.UmojaDB = await window.DatabaseManager.waitForConfigAndCreate();
+            console.log('✅ Database initialized for stories page');
+          }
+        } catch (error) {
+          console.error('❌ Database initialization failed:', error);
+        }
+      });
+    </script>
     <script src="../js/main.js"></script>
     <script src="../js/stories.js"></script>
+    <script src="../js/navigation.js"></script>
 </body>
 </html> 

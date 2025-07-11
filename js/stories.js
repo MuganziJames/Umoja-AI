@@ -1,6 +1,6 @@
 // DOM Elements
 const storyGrid = document.getElementById('stories-grid');
-const storyCards = document.querySelectorAll('.story-card');
+const storiesPageCards = document.querySelectorAll('.story-card');
 const searchInput = document.getElementById('story-search');
 const searchBtn = document.getElementById('search-btn');
 const categoryFilter = document.getElementById('category-filter');
@@ -19,7 +19,7 @@ const totalPagesSpan = document.querySelector('.total-pages');
 // Pagination State
 let currentPage = 1;
 const storiesPerPage = 6;
-let filteredStories = [...storyCards];
+let filteredStories = [...storiesPageCards];
 
 // Load saved stories from localStorage
 let savedStories = localStorage.getItem('savedStories') 
@@ -126,7 +126,7 @@ function filterStories() {
     currentPage = 1;
     
     // Filter stories
-    filteredStories = [...storyCards].filter(card => {
+    filteredStories = [...storiesPageCards].filter(card => {
         const title = card.querySelector('h3').textContent.toLowerCase();
         const content = card.querySelector('p').textContent.toLowerCase();
         const cardCategory = card.dataset.category;
@@ -185,7 +185,7 @@ function updatePagination() {
 // Display stories for current page
 function displayStories() {
     // Hide all stories first
-    storyCards.forEach(card => {
+    storiesPageCards.forEach(card => {
         card.style.display = 'none';
     });
     
