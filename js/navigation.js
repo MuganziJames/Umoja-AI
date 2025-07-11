@@ -60,6 +60,12 @@ class NavigationManager {
         this.currentUser = null;
         this.showSignInButton();
       }
+      
+      // Dispatch custom event to notify other components
+      window.dispatchEvent(new CustomEvent('authStateChanged', {
+        detail: { user: this.currentUser }
+      }));
+      
     } catch (error) {
       console.error('Error checking auth state:', error);
       this.showSignInButton();
@@ -78,14 +84,11 @@ class NavigationManager {
     if (this.authNavItem && this.currentUser) {
       const userData = this.currentUser.user_metadata || {};
       const displayName = userData.name || userData.firstName || this.currentUser.email.split('@')[0];
-      const initials = this.getInitials(displayName);
       
       this.authNavItem.innerHTML = `
         <div class="profile-dropdown">
           <button class="btn outline profile-btn" onclick="navManager.toggleProfileDropdown()">
-            <span class="profile-avatar-small">${initials}</span>
-            <span class="profile-name">${displayName}</span>
-            <i class="fas fa-chevron-down"></i>
+            <i class="fas fa-user"></i>
           </button>
           <div class="profile-dropdown-menu" id="profile-dropdown-menu">
             <a href="${this.getProfilePath()}" class="dropdown-item">
@@ -195,6 +198,51 @@ class NavigationManager {
       }
     });
   }
+
+  // Listen for auth state changes from other parts of the app
+  setupAuthStateListener() {
+    // Listen for custom auth events
+    window.addEventListener('authStateChanged', (event) => {
+      this.currentUser = event.detail.user;
+      if (this.currentUser) {
+        this.showProfileButton();
+      } else {
+        this.showSignInButton();
+      }
+    });
+
+    // Periodically check auth state (every 5 seconds when page is visible)
+    let authCheckInterval;
+    
+    const startAuthCheck = () => {
+      authCheckInterval = setInterval(async () => {
+        if (document.visibilityState === 'visible') {
+          await this.updateNavigationState();
+        }
+      }, 5000);
+    };
+
+    const stopAuthCheck = () => {
+      if (authCheckInterval) {
+        clearInterval(authCheckInterval);
+      }
+    };
+
+    // Start checking when page becomes visible
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        this.updateNavigationState();
+        startAuthCheck();
+      } else {
+        stopAuthCheck();
+      }
+    });
+
+    // Start immediately if page is visible
+    if (document.visibilityState === 'visible') {
+      startAuthCheck();
+    }
+  }
 }
 
 // Global instance
@@ -207,5 +255,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     navManager = new NavigationManager();
     await navManager.initialize();
     navManager.closeDropdownOnOutsideClick();
+    navManager.setupAuthStateListener();
   }, 100);
 });

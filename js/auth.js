@@ -184,7 +184,7 @@ class AuthManager {
         setTimeout(() => {
           const returnUrl =
             new URLSearchParams(window.location.search).get("return") ||
-            "../pages/submit.html";
+            "../index.html"; // Default to home page instead of submit page
           window.location.href = returnUrl;
         }, 1500);
       } else {
@@ -475,12 +475,17 @@ class AuthManager {
   async checkAuthStatus() {
     try {
       const user = await this.db.getCurrentUser();
-      if (user) {
-        // User is already signed in, redirect
-        const returnUrl =
-          new URLSearchParams(window.location.search).get("return") ||
-          "../pages/submit.html";
-        window.location.href = returnUrl;
+      if (user && user.success && user.user) {
+        // User is already signed in
+        // Only redirect if there's a specific return URL, not automatically
+        const returnUrl = new URLSearchParams(window.location.search).get("return");
+        if (returnUrl) {
+          console.log('User already authenticated, redirecting to:', returnUrl);
+          window.location.href = returnUrl;
+        } else {
+          // User is signed in but no return URL - just log it, don't redirect
+          console.log('User already authenticated, staying on auth page');
+        }
       }
     } catch (error) {
       // User not signed in, continue with auth page

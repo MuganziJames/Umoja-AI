@@ -411,6 +411,20 @@
     <script src="../js/input-sanitizer.js"></script>
     <script src="../js/supabase-config.js"></script>
     <script src="../js/database-manager.js"></script>
+    <script>
+      // Initialize database for profile page
+      document.addEventListener('DOMContentLoaded', async () => {
+        try {
+          if (window.DatabaseManager && window.UmojaConfig) {
+            window.UmojaDB = await window.DatabaseManager.waitForConfigAndCreate();
+            console.log('✅ Database initialized for profile page');
+          }
+        } catch (error) {
+          console.error('❌ Database initialization failed:', error);
+        }
+      });
+    </script>
+    <script src="../js/navigation.js"></script>
     <script src="../js/auth.js"></script>
     <script src="../js/profile.js"></script>
   </body>

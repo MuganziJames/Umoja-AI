@@ -262,8 +262,15 @@ nav .btn.outline {
 .profile-btn {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: var(--spacing-xs);
   cursor: pointer;
+  min-width: 40px;
+  height: 40px;
+}
+
+.profile-btn i.fa-user {
+  font-size: 1rem;
 }
 
 .profile-avatar-small {
@@ -284,6 +291,7 @@ nav .btn.outline {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  display: none; /* Hide name by default for simple icon */
 }
 
 .profile-dropdown-menu {
