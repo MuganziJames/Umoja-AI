@@ -25,7 +25,7 @@
             <li><a href="pages/about.html">About Umoja</a></li>
             <li><a href="pages/contact.html">Contact</a></li>
             <li id="auth-nav-item">
-              <a href="pages/auth.html" class="btn outline">Sign In</a>
+              <!-- Profile dropdown will be inserted here by auth-guard -->
             </li>
           </ul>
         </nav>
@@ -157,6 +157,9 @@
     <script src="js/input-sanitizer.js"></script>
     <script src="js/supabase-config.js"></script>
     <script src="js/database-manager.js"></script>
+    <script src="js/session-manager.js"></script>
+    <script src="js/auth-guard.js"></script>
+    <script src="js/story-image-utils.js"></script>
     <script src="js/navigation.js"></script>
     <script src="js/main.js"></script>
     <script>
@@ -222,11 +225,11 @@
 
                 storyCard.innerHTML = `
                   <div class="story-image">
-                    ${
-                      story.image_url
-                        ? `<img src="${story.image_url}" alt="${story.title}" loading="lazy">`
-                        : `<img src="images/story1.jpg" alt="${story.title}">`
-                    }
+                    <img src="${
+                      window.StoryImageUtils
+                        ? window.StoryImageUtils.getStoryImageUrl(story)
+                        : story.image_url || "images/story-placeholder.svg"
+                    }" alt="${story.title}" loading="lazy">
                   </div>
                   <div class="story-content">
                     <span class="category category-${story.category}">${

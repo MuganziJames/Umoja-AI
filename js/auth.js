@@ -166,6 +166,7 @@ class AuthManager {
     const formData = new FormData(e.target);
     const email = formData.get("email").trim();
     const password = formData.get("password");
+    const rememberMe = formData.get("rememberMe") === "on";
 
     // Validate inputs
     if (!this.validateSignInForm(email, password)) return;
@@ -178,25 +179,32 @@ class AuthManager {
       const result = await this.db.signIn(email, password);
 
       if (result.success) {
-        this.showNotification("Welcome back! Redirecting...", "success");
-
-        // Immediately notify navigation manager about auth state change
-        if (window.navManager) {
-          await window.navManager.updateNavigationState();
+        // Set session with remember me preference
+        if (window.SessionManager) {
+          window.SessionManager.setSession(result.user, rememberMe);
         }
 
-        // Also dispatch custom event for other listeners
+        this.showNotification("Welcome back! Redirecting...", "success");
+
+        // Dispatch custom event for other listeners
         window.dispatchEvent(
           new CustomEvent("userSignedIn", {
             detail: { user: result.user },
           })
         );
 
+        // Check for redirect URL from session storage
+        const redirectUrl = sessionStorage.getItem(
+          "umoja_redirect_after_login"
+        );
+        sessionStorage.removeItem("umoja_redirect_after_login");
+
         // Redirect after brief delay
         setTimeout(() => {
           const returnUrl =
+            redirectUrl ||
             new URLSearchParams(window.location.search).get("return") ||
-            "../index.html"; // Default to home page instead of submit page
+            "../index.html"; // Default to home page
           window.location.href = returnUrl;
         }, 1500);
       } else {
@@ -486,19 +494,44 @@ class AuthManager {
 
   async checkAuthStatus() {
     try {
+      // Check session first, then database
+      if (window.SessionManager && window.SessionManager.isAuthenticated()) {
+        const returnUrl =
+          sessionStorage.getItem("umoja_redirect_after_login") ||
+          new URLSearchParams(window.location.search).get("return");
+
+        if (returnUrl) {
+          sessionStorage.removeItem("umoja_redirect_after_login");
+          console.log("User already authenticated, redirecting to:", returnUrl);
+          window.location.href = returnUrl;
+        } else {
+          // Redirect to home if already authenticated
+          console.log("User already authenticated, redirecting to home");
+          window.location.href = "../index.html";
+        }
+        return;
+      }
+
+      // Fallback to database check
       const user = await this.db.getCurrentUser();
       if (user) {
-        // User is already signed in
-        // Only redirect if there's a specific return URL, not automatically
+        // User is in database but not in session - set session
+        if (window.SessionManager) {
+          window.SessionManager.setSession(user, false); // Default to 24h timeout
+        }
+
         const returnUrl = new URLSearchParams(window.location.search).get(
           "return"
         );
         if (returnUrl) {
-          console.log("User already authenticated, redirecting to:", returnUrl);
+          console.log(
+            "User authenticated in database, redirecting to:",
+            returnUrl
+          );
           window.location.href = returnUrl;
         } else {
-          // User is signed in but no return URL - just log it, don't redirect
-          console.log("User already authenticated, staying on auth page");
+          console.log("User authenticated in database, redirecting to home");
+          window.location.href = "../index.html";
         }
       }
     } catch (error) {

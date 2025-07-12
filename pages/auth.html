@@ -86,7 +86,7 @@
       }
 
       .form-group {
-        margin-bottom: var(--spacing-lg);
+        margin-bottom: var(--spacing-md);
       }
 
       .form-group label {
@@ -98,12 +98,14 @@
 
       .form-group input {
         width: 100%;
-        padding: var(--spacing-md);
+        padding: var(--spacing-sm);
         border: 2px solid var(--border-color);
         border-radius: var(--radius-md);
         font-family: var(--font-primary);
-        font-size: var(--font-size-base);
+        font-size: var(--font-size-sm);
         transition: border-color var(--transition-fast);
+        height: 38px;
+        box-sizing: border-box;
       }
 
       .form-group input:focus {
@@ -126,6 +128,26 @@
         color: var(--text-muted);
         font-size: var(--font-size-sm);
         margin-top: var(--spacing-xs);
+      }
+
+      .checkbox-label {
+        display: flex !important;
+        align-items: center;
+        cursor: pointer;
+        font-weight: normal !important;
+        gap: var(--spacing-sm);
+      }
+
+      .checkbox-label input[type="checkbox"] {
+        width: auto !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        border: none !important;
+      }
+
+      .checkbox-label .checkmark {
+        font-size: var(--font-size-sm);
+        color: var(--text-secondary);
       }
 
       .auth-submit {
@@ -316,10 +338,10 @@
   </head>
   <body>
     <div class="auth-container">
-      <a href="../index.html" class="back-to-site">
+      <!-- <a href="../index.html" class="back-to-site">
         <i class="fas fa-arrow-left"></i>
         Back to Site
-      </a>
+      </a> -->
 
       <div class="auth-card">
         <div class="auth-header">
@@ -352,18 +374,15 @@
               <div class="error-message"></div>
             </div>
 
+            <div class="form-group">
+              <label class="checkbox-label">
+                <input type="checkbox" id="remember-me" name="rememberMe" />
+                <span class="checkmark"></span>
+                Remember me
+              </label>
+            </div>
+
             <button type="submit" class="auth-submit">Sign In</button>
-
-            <div class="auth-divider">
-              <span>or continue with</span>
-            </div>
-
-            <div class="oauth-buttons">
-              <button type="button" class="oauth-btn" id="google-signin">
-                <i class="fab fa-google"></i>
-                Continue with Google
-              </button>
-            </div>
 
             <div class="auth-footer">
               <p>
@@ -415,17 +434,6 @@
             </div>
 
             <button type="submit" class="auth-submit">Create Account</button>
-
-            <div class="auth-divider">
-              <span>or continue with</span>
-            </div>
-
-            <div class="oauth-buttons">
-              <button type="button" class="oauth-btn" id="google-signup">
-                <i class="fab fa-google"></i>
-                Continue with Google
-              </button>
-            </div>
 
             <div class="auth-footer">
               <p>
@@ -538,6 +546,7 @@
     <script src="../js/input-sanitizer.js"></script>
     <script src="../js/supabase-config.js"></script>
     <script src="../js/database-manager.js"></script>
+    <script src="../js/session-manager.js"></script>
 
     <!-- Initialize Auth Manager after everything else loads -->
     <script>

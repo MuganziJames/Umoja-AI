@@ -1,0 +1,14 @@
+<!-- Social Justice Story Placeholder -->
+<svg width="400" height="250" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="justiceGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ff6b6b;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#feca57;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <rect width="100%" height="100%" fill="url(#justiceGrad)"/>
+  <rect x="175" y="100" width="50" height="30" fill="white" opacity="0.8"/>
+  <rect x="185" y="90" width="30" height="10" fill="white" opacity="0.8"/>
+  <circle cx="200" cy="80" r="8" fill="white" opacity="0.8"/>
+  <text x="200" y="185" font-family="Arial, sans-serif" font-size="14" fill="white" text-anchor="middle">Social Justice Story</text>
+</svg>

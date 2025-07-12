@@ -30,7 +30,7 @@ class ProfileManager {
       // Initialize the page
       await this.loadProfileData();
       this.setupEventListeners();
-      this.updateNavigation();
+      // Navigation will be handled by auth-guard.js
 
       console.log("✅ ProfileManager initialized successfully");
     } catch (error) {
@@ -51,10 +51,25 @@ class ProfileManager {
 
   async checkAuthentication() {
     try {
+      // First check session manager
+      if (window.SessionManager && window.SessionManager.isAuthenticated()) {
+        const user = window.SessionManager.getCurrentUser();
+        if (user) {
+          return { success: true, user: user };
+        }
+      }
+
+      // Fallback to database check
       const user = await this.db.getCurrentUser();
       if (!user) {
         return { success: false, error: "Not authenticated" };
       }
+
+      // Update session if database has user but session doesn't
+      if (window.SessionManager) {
+        window.SessionManager.setSession(user, false); // Default to 24h timeout
+      }
+
       return { success: true, user: user };
     } catch (error) {
       return { success: false, error: error.message };
@@ -364,6 +379,11 @@ class ProfileManager {
     try {
       const result = await this.db.signOut();
       if (result.success) {
+        // Clear session
+        if (window.SessionManager) {
+          window.SessionManager.logout();
+        }
+
         // Clear any cached data
         this.currentUser = null;
         this.userArticles = [];
@@ -375,6 +395,10 @@ class ProfileManager {
       }
     } catch (error) {
       console.error("Error during logout:", error);
+      // Still clear session and redirect even if database logout fails
+      if (window.SessionManager) {
+        window.SessionManager.logout();
+      }
       this.showError("Failed to logout");
     }
   }
@@ -382,21 +406,6 @@ class ProfileManager {
   editProfile() {
     // For now, just show an alert. This could be expanded to a modal or separate page
     alert("Profile editing feature coming soon!");
-  }
-
-  updateNavigation() {
-    // Update the navigation to show profile link instead of sign in
-    const authNavItem = document.getElementById("auth-nav-item");
-    if (authNavItem && this.currentUser) {
-      const userData = this.currentUser.user_metadata || {};
-      const displayName = userData.name || userData.firstName || "Profile";
-
-      authNavItem.innerHTML = `
-        <a href="profile.html" class="btn outline">
-          <i class="fas fa-user"></i> ${displayName}
-        </a>
-      `;
-    }
   }
 
   escapeHtml(text) {
