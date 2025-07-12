@@ -53,53 +53,7 @@
       <div class="container">
         <h2>Featured Stories</h2>
         <div class="stories-grid">
-          <article class="story-card">
-            <div class="story-image">
-              <img src="images/story1.jpg" alt="Mental Health Awareness" />
-            </div>
-            <div class="story-content">
-              <span class="category">Mental Health</span>
-              <h3>Finding Light in Darkness</h3>
-              <p>
-                My journey through depression and the community that helped me
-                heal.
-              </p>
-              <a href="pages/stories.html#story1" class="read-more"
-                >Read More</a
-              >
-            </div>
-          </article>
-
-          <article class="story-card">
-            <div class="story-image">
-              <img src="images/story2.jpg" alt="Gender Equality" />
-            </div>
-            <div class="story-content">
-              <span class="category">Gender Equality</span>
-              <h3>Breaking the Glass Ceiling</h3>
-              <p>How I navigated barriers in a male-dominated industry.</p>
-              <a href="pages/stories.html#story2" class="read-more"
-                >Read More</a
-              >
-            </div>
-          </article>
-
-          <article class="story-card">
-            <div class="story-image">
-              <img src="images/story3.jpg" alt="Social Justice" />
-            </div>
-            <div class="story-content">
-              <span class="category">Social Justice</span>
-              <h3>Standing for What's Right</h3>
-              <p>
-                My experience advocating for community resources in underserved
-                areas.
-              </p>
-              <a href="pages/stories.html#story3" class="read-more"
-                >Read More</a
-              >
-            </div>
-          </article>
+          <!-- Stories will be loaded dynamically from database -->
         </div>
         <div class="view-all">
           <a href="pages/stories.html" class="btn secondary"
@@ -297,7 +251,25 @@
               }
             }
           } else {
-            console.log("📭 No featured stories found or failed to load");
+            console.log("📭 No featured stories found");
+            const storiesGrid = document.querySelector('.stories-grid');
+            if (storiesGrid) {
+              storiesGrid.innerHTML = `
+                <div class="no-stories">
+                  <i class="fas fa-book-open" style="font-size: 3rem; color: #ccc; margin-bottom: 1rem;"></i>
+                  <h3 style="color: #666; margin-bottom: 0.5rem;">No Stories Yet</h3>
+                  <p style="color: #999; margin-bottom: 1.5rem;">Be the first to share your story with the community.</p>
+                  <a href="pages/submit.html" class="btn primary">Share Your Story</a>
+                </div>
+              `;
+              storiesGrid.style.cssText = `
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                min-height: 300px;
+                text-align: center;
+              `;
+            }
           }
         } catch (error) {
           console.error("❌ Home page initialization failed:", error);

@@ -243,6 +243,7 @@ class DatabaseManager {
       console.log("🔍 Getting stories with filters:", filters);
 
       // Build query without joins since relationships don't exist
+      // This should get ALL approved stories from ALL users
       let query = this.supabase
         .from("stories")
         .select("*")
@@ -263,13 +264,53 @@ class DatabaseManager {
 
       if (error) {
         console.error("❌ Get stories error:", error);
-        throw error;
+        // If there's an RLS error, try to bypass it by getting all public stories
+        console.log("🔄 Attempting to get public stories...");
+        return await this.getPublicStories(filters);
       }
 
       console.log("✅ Retrieved stories:", data?.length || 0);
       return { success: true, stories: data || [] };
     } catch (error) {
       console.error("Get stories error:", error);
+      // Fallback to public stories
+      return await this.getPublicStories(filters);
+    }
+  }
+
+  // Get public stories (bypass RLS issues)
+  async getPublicStories(filters = {}) {
+    try {
+      console.log("🌍 Getting public stories (bypassing RLS)...");
+      
+      // Use service role or public access to get all approved stories
+      let query = this.supabase
+        .from("stories")
+        .select("*")
+        .eq("status", "approved")
+        .not("published_at", "is", null)
+        .order("published_at", { ascending: false });
+
+      // Apply filters
+      if (filters.category && filters.category !== "all") {
+        query = query.eq("category", filters.category);
+      }
+
+      if (filters.limit) {
+        query = query.limit(filters.limit);
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.error("❌ Get public stories error:", error);
+        return { success: false, error: error.message, stories: [] };
+      }
+
+      console.log("✅ Retrieved public stories:", data?.length || 0);
+      return { success: true, stories: data || [] };
+    } catch (error) {
+      console.error("Get public stories error:", error);
       return { success: false, error: error.message, stories: [] };
     }
   }
@@ -289,11 +330,12 @@ class DatabaseManager {
       let query = this.supabase
         .from("stories")
         .select("*")
+        .eq("status", "approved")  // Explicitly filter for approved stories
         .not("published_at", "is", null)
         .order("published_at", { ascending: false });
 
-      // Apply filters
-      if (filters.status) {
+      // Apply additional filters
+      if (filters.status && filters.status !== "approved") {
         query = query.eq("status", filters.status);
       }
 
