@@ -164,95 +164,123 @@
       async function initHomePage() {
         try {
           console.log("🔄 Initializing home page...");
-          
+
           // Wait for required components
           let retries = 0;
-          while ((!window.UmojaConfig || !window.DatabaseManager) && retries < 100) {
-            await new Promise(resolve => setTimeout(resolve, 100));
+          while (
+            (!window.UmojaConfig || !window.DatabaseManager) &&
+            retries < 100
+          ) {
+            await new Promise((resolve) => setTimeout(resolve, 100));
             retries++;
           }
-          
+
           if (!window.UmojaConfig || !window.DatabaseManager) {
             throw new Error("Required components not available");
           }
-          
-          window.UmojaDB = await window.DatabaseManager.waitForConfigAndCreate();
+
+          window.UmojaDB =
+            await window.DatabaseManager.waitForConfigAndCreate();
           console.log("✅ Database initialized for index page");
-          
+
           // Load stories from database and update the UI
           console.log("🔍 Loading featured stories...");
-          
+
           // First, debug what stories exist
           const debugResult = await window.UmojaDB.debugGetAllStories();
           console.log("🐛 DEBUG: All stories result:", debugResult);
-          
+
           const result = await window.UmojaDB.getStories({ limit: 3 });
           console.log("📊 Featured stories result:", result);
-          
+
           if (result?.success && result.stories?.length > 0) {
-            const storiesGrid = document.querySelector('.stories-grid');
+            const storiesGrid = document.querySelector(".stories-grid");
             console.log("📍 Stories grid found:", !!storiesGrid);
-            
+
             if (storiesGrid) {
               // Clear existing content
-              storiesGrid.innerHTML = '';
+              storiesGrid.innerHTML = "";
               console.log("🧹 Cleared existing content");
-              
+
               // Add each story
               result.stories.forEach((story, index) => {
-                console.log(`📖 Processing featured story ${index + 1}:`, story.title);
-                
-                const readingTime = Math.ceil((story.content?.length || 0) / 250);
-                const publishDate = new Date(story.published_at || story.created_at).toLocaleDateString();
-                
-                const storyCard = document.createElement('article');
-                storyCard.className = 'story-card';
+                console.log(
+                  `📖 Processing featured story ${index + 1}:`,
+                  story.title
+                );
+
+                const readingTime = Math.ceil(
+                  (story.content?.length || 0) / 250
+                );
+                const publishDate = new Date(
+                  story.published_at || story.created_at
+                ).toLocaleDateString();
+
+                const storyCard = document.createElement("article");
+                storyCard.className = "story-card";
                 storyCard.dataset.storyId = story.id;
-                
+
                 storyCard.innerHTML = `
                   <div class="story-image">
-                    ${story.image_url 
-                      ? `<img src="${story.image_url}" alt="${story.title}" loading="lazy">` 
-                      : `<img src="images/story1.jpg" alt="${story.title}">`}
+                    ${
+                      story.image_url
+                        ? `<img src="${story.image_url}" alt="${story.title}" loading="lazy">`
+                        : `<img src="images/story1.jpg" alt="${story.title}">`
+                    }
                   </div>
                   <div class="story-content">
-                    <span class="category category-${story.category}">${story.category?.replace('-', ' ') || 'General'}</span>
+                    <span class="category category-${story.category}">${
+                  story.category?.replace("-", " ") || "General"
+                }</span>
                     <h3>${story.title}</h3>
-                    <p>${story.summary || story.content.substring(0, 120) + '...'}</p>
+                    <p>${
+                      story.summary || story.content.substring(0, 120) + "..."
+                    }</p>
                     <div class="story-meta">
-                      <span class="author"><i class="fas fa-user"></i> ${story.author_name}</span>
+                      <span class="author"><i class="fas fa-user"></i> ${
+                        story.author_name
+                      }</span>
                       <span class="date"><i class="fas fa-calendar"></i> ${publishDate}</span>
                       <span class="reading-time"><i class="fas fa-clock"></i> ${readingTime} min read</span>
                     </div>
                   </div>
-                  <a href="pages/stories.html?id=${story.id}" class="story-link" aria-label="Read more about ${story.title}"></a>
+                  <a href="pages/stories.html?id=${
+                    story.id
+                  }" class="story-link" aria-label="Read more about ${
+                  story.title
+                }"></a>
                 `;
-                
+
                 storiesGrid.appendChild(storyCard);
               });
-              
-              console.log(`✅ Added ${result.stories.length} featured stories to home page`);
-              
+
+              console.log(
+                `✅ Added ${result.stories.length} featured stories to home page`
+              );
+
               // Add animation to story cards
-              const storyCards = document.querySelectorAll('.story-card');
+              const storyCards = document.querySelectorAll(".story-card");
               if (storyCards.length > 0) {
-                const observer = new IntersectionObserver((entries) => {
-                  entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                      entry.target.classList.add('fadeIn');
-                      observer.unobserve(entry.target);
-                    }
-                  });
-                }, { threshold: 0.1 });
-                
-                storyCards.forEach(card => {
+                const observer = new IntersectionObserver(
+                  (entries) => {
+                    entries.forEach((entry) => {
+                      if (entry.isIntersecting) {
+                        entry.target.classList.add("fadeIn");
+                        observer.unobserve(entry.target);
+                      }
+                    });
+                  },
+                  { threshold: 0.1 }
+                );
+
+                storyCards.forEach((card) => {
                   observer.observe(card);
                 });
               }
             }
           } else {
             console.log("📭 No featured stories found");
-            const storiesGrid = document.querySelector('.stories-grid');
+            const storiesGrid = document.querySelector(".stories-grid");
             if (storiesGrid) {
               storiesGrid.innerHTML = `
                 <div class="no-stories">
@@ -275,10 +303,10 @@
           console.error("❌ Home page initialization failed:", error);
         }
       }
-      
+
       // Initialize when DOM is ready
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initHomePage);
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", initHomePage);
       } else {
         initHomePage();
       }
