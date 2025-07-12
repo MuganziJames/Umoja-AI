@@ -125,7 +125,7 @@ function updateCharacterCount() {
 // Button state management
 function setButtonLoading(button, loadingText) {
   if (!button) return;
-  
+
   button.originalText = button.textContent;
   button.textContent = loadingText;
   button.disabled = true;
@@ -135,8 +135,9 @@ function setButtonLoading(button, loadingText) {
 
 function resetButtonState(button, originalText) {
   if (!button) return;
-  
-  button.textContent = originalText || button.originalText || button.textContent;
+
+  button.textContent =
+    originalText || button.originalText || button.textContent;
   button.disabled = false;
   button.style.opacity = "1";
   button.style.cursor = "pointer";
@@ -157,7 +158,7 @@ function showNotification(message, type = "info", duration = 5000) {
         return window.showInfo?.(message, { duration });
     }
   }
-  
+
   // Fallback to console if notification system not available
   console.log(`[${type.toUpperCase()}] ${message}`);
 }
@@ -188,10 +189,16 @@ function validateForm() {
     showFieldError("story-content", "Story content is required");
     isValid = false;
   } else if (content.length < 100) {
-    showFieldError("story-content", "Story must be at least 100 characters long");
+    showFieldError(
+      "story-content",
+      "Story must be at least 100 characters long"
+    );
     isValid = false;
   } else if (content.length > MAX_CHARS) {
-    showFieldError("story-content", `Story must be less than ${MAX_CHARS} characters`);
+    showFieldError(
+      "story-content",
+      `Story must be less than ${MAX_CHARS} characters`
+    );
     isValid = false;
   }
 
@@ -239,10 +246,15 @@ function showFieldError(fieldId, message) {
 
 function clearFieldErrors() {
   const errorDivs = document.querySelectorAll(".field-error");
-  errorDivs.forEach(div => div.remove());
+  errorDivs.forEach((div) => div.remove());
 
-  const fields = ["story-title", "story-content", "full-name", "story-category"];
-  fields.forEach(fieldId => {
+  const fields = [
+    "story-title",
+    "story-content",
+    "full-name",
+    "story-category",
+  ];
+  fields.forEach((fieldId) => {
     const field = document.getElementById(fieldId);
     if (field) {
       field.style.borderColor = "";
@@ -346,20 +358,24 @@ async function handleSubmission(e) {
     console.log("📝 Submission result:", result);
 
     if (result?.success) {
-      console.log(`✅ Story ${editMode ? 'updated' : 'published'} successfully!`);
+      console.log(
+        `✅ Story ${editMode ? "updated" : "published"} successfully!`
+      );
 
       // Show prominent success notification
-      const message = editMode 
+      const message = editMode
         ? "Your story has been updated successfully!"
         : "Thank you for uploading your story! Every story matters to us. Your story is now live on the website.";
-      
+
       window.showSuccess?.(message, {
         title: editMode ? "Story Updated!" : "SUCCESS!",
-        duration: 8000
-      }) || showNotification(message,
-        "success",
-        8000 // Show for 8 seconds
-      );
+        duration: 8000,
+      }) ||
+        showNotification(
+          message,
+          "success",
+          8000 // Show for 8 seconds
+        );
 
       // Track successful submission
       try {
@@ -612,16 +628,16 @@ let editStory = null;
 
 // Check for edit mode
 const urlParams = new URLSearchParams(window.location.search);
-const editId = urlParams.get('edit');
+const editId = urlParams.get("edit");
 
 if (editId) {
   editMode = true;
   // Update page title and UI for edit mode
   document.title = "Edit Story - Voices of Change";
-  const pageHeader = document.querySelector('.page-header h1');
+  const pageHeader = document.querySelector(".page-header h1");
   if (pageHeader) pageHeader.textContent = "Edit Your Story";
-  
-  const submitButton = document.getElementById('submit-story');
+
+  const submitButton = document.getElementById("submit-story");
   if (submitButton) {
     submitButton.innerHTML = '<i class="fas fa-save"></i> Update Story';
   }
@@ -629,19 +645,19 @@ if (editId) {
 
 async function loadStoryForEdit() {
   if (!editMode || !editId) return;
-  
+
   try {
     if (!window.UmojaDB) {
       throw new Error("Database not available");
     }
-    
+
     const result = await window.UmojaDB.getStoryById(editId);
     if (result.success && result.story) {
       editStory = result.story;
       populateFormWithStory(editStory);
-      
+
       window.showInfo?.("Story loaded for editing", {
-        title: "Edit Mode"
+        title: "Edit Mode",
       });
     } else {
       throw new Error(result.error || "Story not found");
@@ -651,7 +667,7 @@ async function loadStoryForEdit() {
     window.showError?.("Failed to load story for editing: " + error.message);
     // Redirect back to profile after error
     setTimeout(() => {
-      window.location.href = 'profile.html';
+      window.location.href = "profile.html";
     }, 3000);
   }
 }
@@ -659,29 +675,35 @@ async function loadStoryForEdit() {
 function populateFormWithStory(story) {
   // Populate form fields
   if (story.title) {
-    const titleField = document.querySelector('input[name="story-title"], #story-title');
+    const titleField = document.querySelector(
+      'input[name="story-title"], #story-title'
+    );
     if (titleField) titleField.value = story.title;
   }
-  
+
   if (story.content && storyContent) {
     storyContent.value = story.content;
   }
-  
+
   if (story.category) {
-    const categoryField = document.querySelector('select[name="story-category"], #story-category');
+    const categoryField = document.querySelector(
+      'select[name="story-category"], #story-category'
+    );
     if (categoryField) categoryField.value = story.category;
   }
-  
+
   if (story.is_anonymous) {
-    const anonymousField = document.querySelector('input[name="anonymous"], #anonymous');
+    const anonymousField = document.querySelector(
+      'input[name="anonymous"], #anonymous'
+    );
     if (anonymousField) anonymousField.checked = true;
   }
-  
+
   // Update character count
   updateCharacterCount();
 }
 
-// Enhanced save draft functionality  
+// Enhanced save draft functionality
 async function saveDraftEnhanced() {
   try {
     // Show loading state
@@ -689,15 +711,16 @@ async function saveDraftEnhanced() {
     if (saveDraftBtn) {
       const originalText = saveDraftBtn.textContent;
       saveDraftBtn.disabled = true;
-      saveDraftBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+      saveDraftBtn.innerHTML =
+        '<i class="fas fa-spinner fa-spin"></i> Saving...';
     }
 
     const formData = new FormData(storyForm);
     const draftData = {
-      title: formData.get('story-title') || '',
-      content: formData.get('story-content') || '',
-      category: formData.get('story-category') || 'general',
-      isAnonymous: formData.get('anonymous') === 'on'
+      title: formData.get("story-title") || "",
+      content: formData.get("story-content") || "",
+      category: formData.get("story-category") || "general",
+      isAnonymous: formData.get("anonymous") === "on",
     };
 
     // Don't save empty drafts
@@ -712,9 +735,9 @@ async function saveDraftEnhanced() {
       const result = await window.UmojaDB.saveDraft(draftData, draftId);
       if (result.success) {
         window.showSuccess?.("Draft saved successfully!", {
-          title: "Draft Saved"
+          title: "Draft Saved",
         });
-        
+
         // Clear localStorage backup since it's saved to database
         localStorage.removeItem("story_draft");
       } else {
@@ -725,7 +748,6 @@ async function saveDraftEnhanced() {
       localStorage.setItem("story_draft", JSON.stringify(draftData));
       window.showSuccess?.("Draft saved locally!");
     }
-
   } catch (error) {
     console.error("Error saving draft:", error);
     window.showError?.("Failed to save draft: " + error.message);
@@ -742,7 +764,7 @@ async function saveDraftEnhanced() {
 // Character count update function
 function updateCharacterCount() {
   if (!storyContent || !currentCount) return;
-  
+
   const text = storyContent.value;
   const chars = text.length;
   const words = text.trim() === "" ? 0 : text.trim().split(/\s+/).length;
@@ -751,11 +773,12 @@ function updateCharacterCount() {
 
   // Update counts
   if (currentCount) currentCount.textContent = chars;
-  if (wordCount) wordCount.textContent = `(${words} word${words !== 1 ? "s" : ""})`;
+  if (wordCount)
+    wordCount.textContent = `(${words} word${words !== 1 ? "s" : ""})`;
 
   // Update styling based on count
   const submitButton = document.getElementById("submit-story");
-  
+
   if (chars > maxChars) {
     if (currentCount) currentCount.className = "danger";
     if (charWarning) charWarning.classList.remove("hidden");
@@ -778,7 +801,7 @@ function updateCharacterCount() {
 // Initialize enhanced features
 document.addEventListener("DOMContentLoaded", async () => {
   // Wait for notification system
-  await new Promise(resolve => {
+  await new Promise((resolve) => {
     if (window.NotificationSystem) {
       resolve();
     } else {
@@ -824,9 +847,12 @@ document.addEventListener("DOMContentLoaded", async () => {
         const validation = window.InputSanitizer?.validateFileUpload(file);
 
         if (validation && !validation.isValid) {
-          window.showError?.("File validation failed: " + validation.errors.join(", "), {
-            title: "Invalid File"
-          });
+          window.showError?.(
+            "File validation failed: " + validation.errors.join(", "),
+            {
+              title: "Invalid File",
+            }
+          );
           fileInput.value = "";
           fileName.textContent = "No file chosen";
           return;
@@ -843,7 +869,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 async function loadExistingDraft() {
   let draftLoaded = false;
-  
+
   if (window.UmojaDB) {
     try {
       const result = await window.UmojaDB.getAllDrafts();
@@ -851,10 +877,10 @@ async function loadExistingDraft() {
         // Load the most recent draft
         const latestDraft = result.drafts[0];
         populateFormWithStory(latestDraft);
-        
+
         window.showInfo?.("Your latest draft has been loaded", {
           title: "Draft Loaded",
-          duration: 4000
+          duration: 4000,
         });
         draftLoaded = true;
       }
@@ -870,10 +896,10 @@ async function loadExistingDraft() {
       try {
         const draftData = JSON.parse(savedDraft);
         populateFormWithStory(draftData);
-        
+
         window.showInfo?.("A saved draft has been loaded from local storage", {
           title: "Local Draft Loaded",
-          duration: 4000
+          duration: 4000,
         });
       } catch (error) {
         console.error("Error parsing local draft:", error);
@@ -891,5 +917,5 @@ window.UmojaSubmit = {
   populateFormWithStory,
   updateCharacterCount,
   editMode,
-  editStory
+  editStory,
 };

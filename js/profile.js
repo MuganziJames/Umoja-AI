@@ -134,16 +134,20 @@ class ProfileManager {
       const result = await this.db.getUserStories(this.currentUser.id);
       if (result.success) {
         this.userArticles = result.stories || [];
-        
+
         // Also load drafts separately
         const draftResult = await this.db.getAllDrafts();
         if (draftResult.success) {
           // Merge drafts with articles, avoiding duplicates
-          const draftIds = this.userArticles.filter(a => a.status === 'draft').map(a => a.id);
-          const newDrafts = draftResult.drafts.filter(d => !draftIds.includes(d.id));
+          const draftIds = this.userArticles
+            .filter((a) => a.status === "draft")
+            .map((a) => a.id);
+          const newDrafts = draftResult.drafts.filter(
+            (d) => !draftIds.includes(d.id)
+          );
           this.userArticles = [...this.userArticles, ...newDrafts];
         }
-        
+
         this.renderArticles();
       } else {
         console.error("Failed to load articles:", result.error);
@@ -259,11 +263,15 @@ class ProfileManager {
           <button class="action-btn edit-btn" onclick="profileManager.editArticle('${
             article.id
           }')">
-            <i class="fas fa-edit"></i> ${article.status === "draft" ? "Continue" : "Edit"}
+            <i class="fas fa-edit"></i> ${
+              article.status === "draft" ? "Continue" : "Edit"
+            }
           </button>
           <button class="action-btn delete-btn" onclick="profileManager.deleteArticle('${
             article.id
-          }', '${this.escapeHtml(article.title || "Untitled")}', '${article.status}')">
+          }', '${this.escapeHtml(article.title || "Untitled")}', '${
+      article.status
+    }')">
             <i class="fas fa-trash"></i> Delete
           </button>
         </div>
@@ -365,13 +373,15 @@ class ProfileManager {
     window.location.href = `submit.html?edit=${articleId}`;
   }
 
-  async deleteArticle(articleId, title, status = 'story') {
+  async deleteArticle(articleId, title, status = "story") {
     // Create custom confirmation dialog
     const isConfirmed = await this.showConfirmationDialog(
-      `Delete ${status === 'draft' ? 'Draft' : 'Story'}`,
+      `Delete ${status === "draft" ? "Draft" : "Story"}`,
       `Are you sure you want to delete "${title}"?`,
-      `This ${status === 'draft' ? 'draft' : 'story'} will be permanently removed and cannot be recovered.`,
-      status === 'draft' ? 'warning' : 'error'
+      `This ${
+        status === "draft" ? "draft" : "story"
+      } will be permanently removed and cannot be recovered.`,
+      status === "draft" ? "warning" : "error"
     );
 
     if (!isConfirmed) {
@@ -383,11 +393,11 @@ class ProfileManager {
       const loadingNotification = window.showInfo(`Deleting ${status}...`, {
         title: "Please wait",
         persistent: true,
-        closable: false
+        closable: false,
       });
 
       let result;
-      if (status === 'draft') {
+      if (status === "draft") {
         result = await this.db.deleteDraft(articleId);
       } else {
         result = await this.db.deleteStory(articleId);
@@ -397,21 +407,26 @@ class ProfileManager {
       window.NotificationSystem.remove(loadingNotification);
 
       if (result.success) {
-        window.showSuccess(`${status === 'draft' ? 'Draft' : 'Story'} deleted successfully`, {
-          title: "Deleted Successfully"
-        });
-        
+        window.showSuccess(
+          `${status === "draft" ? "Draft" : "Story"} deleted successfully`,
+          {
+            title: "Deleted Successfully",
+          }
+        );
+
         // Remove from UI immediately for better UX
-        const articleElement = document.querySelector(`[data-article-id="${articleId}"]`);
+        const articleElement = document.querySelector(
+          `[data-article-id="${articleId}"]`
+        );
         if (articleElement) {
-          articleElement.style.transition = 'all 0.3s ease';
-          articleElement.style.opacity = '0';
-          articleElement.style.transform = 'translateX(-20px)';
+          articleElement.style.transition = "all 0.3s ease";
+          articleElement.style.opacity = "0";
+          articleElement.style.transform = "translateX(-20px)";
           setTimeout(() => {
             articleElement.remove();
           }, 300);
         }
-        
+
         // Reload articles after a short delay
         setTimeout(async () => {
           await this.loadUserArticles();
@@ -419,22 +434,22 @@ class ProfileManager {
         }, 500);
       } else {
         window.showError(`Failed to delete ${status}: ${result.error}`, {
-          title: "Delete Failed"
+          title: "Delete Failed",
         });
       }
     } catch (error) {
       console.error(`Error deleting ${status}:`, error);
       window.showError(`Failed to delete ${status}`, {
-        title: "Delete Failed"
+        title: "Delete Failed",
       });
     }
   }
 
-  async showConfirmationDialog(title, message, description, type = 'warning') {
+  async showConfirmationDialog(title, message, description, type = "warning") {
     return new Promise((resolve) => {
       // Create modal overlay
-      const overlay = document.createElement('div');
-      overlay.className = 'confirmation-overlay';
+      const overlay = document.createElement("div");
+      overlay.className = "confirmation-overlay";
       overlay.style.cssText = `
         position: fixed;
         top: 0;
@@ -451,8 +466,8 @@ class ProfileManager {
       `;
 
       // Create modal
-      const modal = document.createElement('div');
-      modal.className = 'confirmation-modal';
+      const modal = document.createElement("div");
+      modal.className = "confirmation-modal";
       modal.style.cssText = `
         background: white;
         border-radius: 12px;
@@ -465,15 +480,15 @@ class ProfileManager {
       `;
 
       const iconColors = {
-        warning: '#f59e0b',
-        error: '#ef4444',
-        info: '#3b82f6'
+        warning: "#f59e0b",
+        error: "#ef4444",
+        info: "#3b82f6",
       };
 
       const iconNames = {
-        warning: 'fas fa-exclamation-triangle',
-        error: 'fas fa-trash',
-        info: 'fas fa-info-circle'
+        warning: "fas fa-exclamation-triangle",
+        error: "fas fa-trash",
+        info: "fas fa-info-circle",
       };
 
       modal.innerHTML = `
@@ -510,34 +525,38 @@ class ProfileManager {
 
       // Show modal with animation
       setTimeout(() => {
-        overlay.style.opacity = '1';
-        modal.style.transform = 'scale(1)';
+        overlay.style.opacity = "1";
+        modal.style.transform = "scale(1)";
       }, 10);
 
       // Handle clicks
       const handleClose = (confirmed) => {
-        overlay.style.opacity = '0';
-        modal.style.transform = 'scale(0.9)';
+        overlay.style.opacity = "0";
+        modal.style.transform = "scale(0.9)";
         setTimeout(() => {
           document.body.removeChild(overlay);
           resolve(confirmed);
         }, 300);
       };
 
-      modal.querySelector('.cancel-btn').addEventListener('click', () => handleClose(false));
-      modal.querySelector('.confirm-btn').addEventListener('click', () => handleClose(true));
-      overlay.addEventListener('click', (e) => {
+      modal
+        .querySelector(".cancel-btn")
+        .addEventListener("click", () => handleClose(false));
+      modal
+        .querySelector(".confirm-btn")
+        .addEventListener("click", () => handleClose(true));
+      overlay.addEventListener("click", (e) => {
         if (e.target === overlay) handleClose(false);
       });
 
       // Handle escape key
       const handleEscape = (e) => {
-        if (e.key === 'Escape') {
-          document.removeEventListener('keydown', handleEscape);
+        if (e.key === "Escape") {
+          document.removeEventListener("keydown", handleEscape);
           handleClose(false);
         }
       };
-      document.addEventListener('keydown', handleEscape);
+      document.addEventListener("keydown", handleEscape);
     });
   }
 
@@ -566,7 +585,7 @@ class ProfileManager {
         this.userArticles = [];
 
         window.showSuccess("Successfully signed out", {
-          title: "Goodbye!"
+          title: "Goodbye!",
         });
 
         // Redirect to home page after a short delay
@@ -588,7 +607,7 @@ class ProfileManager {
 
   editProfile() {
     window.showInfo("Profile editing feature is coming soon!", {
-      title: "Feature Coming Soon"
+      title: "Feature Coming Soon",
     });
   }
 

@@ -432,14 +432,14 @@ class DatabaseManager {
         const localDrafts = this.getLocalDrafts();
         const draftToSave = {
           ...draftData,
-          id: draftId || 'local_' + Date.now(),
+          id: draftId || "local_" + Date.now(),
           created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         };
-        
+
         if (draftId) {
           // Update existing local draft
-          const index = localDrafts.findIndex(d => d.id === draftId);
+          const index = localDrafts.findIndex((d) => d.id === draftId);
           if (index !== -1) {
             localDrafts[index] = { ...localDrafts[index], ...draftToSave };
           } else {
@@ -448,15 +448,15 @@ class DatabaseManager {
         } else {
           localDrafts.push(draftToSave);
         }
-        
+
         localStorage.setItem("story_drafts", JSON.stringify(localDrafts));
         return { success: true, draft: draftToSave, location: "local" };
       }
 
       const draftRecord = {
-        title: draftData.title || 'Untitled Draft',
+        title: draftData.title || "Untitled Draft",
         content: draftData.content,
-        category: draftData.category || 'general',
+        category: draftData.category || "general",
         is_anonymous: draftData.isAnonymous || false,
         image_url: draftData.imageUrl || null,
         user_id: user.id,
@@ -483,10 +483,10 @@ class DatabaseManager {
       }
 
       if (result.error) throw result.error;
-      
+
       // Clear localStorage draft if successfully saved to database
       localStorage.removeItem("story_draft");
-      
+
       return { success: true, draft: result.data[0], location: "database" };
     } catch (error) {
       console.error("Save draft error:", error);
@@ -508,7 +508,11 @@ class DatabaseManager {
       const user = await this.getCurrentUser();
       if (!user) {
         // Return local drafts if not authenticated
-        return { success: true, drafts: this.getLocalDrafts(), location: "local" };
+        return {
+          success: true,
+          drafts: this.getLocalDrafts(),
+          location: "local",
+        };
       }
 
       this.ensureInitialized();
@@ -535,7 +539,7 @@ class DatabaseManager {
       if (!user) {
         // Delete from localStorage
         const localDrafts = this.getLocalDrafts();
-        const filteredDrafts = localDrafts.filter(d => d.id !== draftId);
+        const filteredDrafts = localDrafts.filter((d) => d.id !== draftId);
         localStorage.setItem("story_drafts", JSON.stringify(filteredDrafts));
         return { success: true, location: "local" };
       }

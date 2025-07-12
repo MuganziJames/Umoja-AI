@@ -11,12 +11,12 @@ class NotificationSystem {
 
   init() {
     // Create notification container if it doesn't exist
-    if (!document.querySelector('.notification-container')) {
-      this.container = document.createElement('div');
-      this.container.className = 'notification-container';
+    if (!document.querySelector(".notification-container")) {
+      this.container = document.createElement("div");
+      this.container.className = "notification-container";
       document.body.appendChild(this.container);
     } else {
-      this.container = document.querySelector('.notification-container');
+      this.container = document.querySelector(".notification-container");
     }
 
     // Add CSS if not already added
@@ -24,10 +24,10 @@ class NotificationSystem {
   }
 
   addStyles() {
-    if (document.querySelector('#notification-styles')) return;
+    if (document.querySelector("#notification-styles")) return;
 
-    const styles = document.createElement('style');
-    styles.id = 'notification-styles';
+    const styles = document.createElement("style");
+    styles.id = "notification-styles";
     styles.textContent = `
       .notification-container {
         position: fixed;
@@ -145,31 +145,35 @@ class NotificationSystem {
 
   getIcon(type) {
     const icons = {
-      success: 'fas fa-check-circle',
-      error: 'fas fa-exclamation-circle',
-      warning: 'fas fa-exclamation-triangle',
-      info: 'fas fa-info-circle'
+      success: "fas fa-check-circle",
+      error: "fas fa-exclamation-circle",
+      warning: "fas fa-exclamation-triangle",
+      info: "fas fa-info-circle",
     };
     return icons[type] || icons.info;
   }
 
-  show(message, type = 'info', options = {}) {
+  show(message, type = "info", options = {}) {
     const {
-      title = '',
+      title = "",
       duration = 5000,
       closable = true,
-      persistent = false
+      persistent = false,
     } = options;
 
     // Create notification element
-    const notification = document.createElement('div');
+    const notification = document.createElement("div");
     notification.className = `notification ${type}`;
 
     // Build notification content
     let content = `
       <i class="notification-icon ${this.getIcon(type)}"></i>
       <div class="notification-content">
-        ${title ? `<div class="notification-title">${this.escapeHtml(title)}</div>` : ''}
+        ${
+          title
+            ? `<div class="notification-title">${this.escapeHtml(title)}</div>`
+            : ""
+        }
         <div class="notification-message">${this.escapeHtml(message)}</div>
       </div>
     `;
@@ -186,15 +190,15 @@ class NotificationSystem {
 
     // Add click handlers
     if (closable) {
-      const closeBtn = notification.querySelector('.notification-close');
-      closeBtn.addEventListener('click', (e) => {
+      const closeBtn = notification.querySelector(".notification-close");
+      closeBtn.addEventListener("click", (e) => {
         e.stopPropagation();
         this.remove(notification);
       });
     }
 
     // Click to dismiss
-    notification.addEventListener('click', () => {
+    notification.addEventListener("click", () => {
       if (closable) {
         this.remove(notification);
       }
@@ -205,16 +209,16 @@ class NotificationSystem {
 
     // Show notification
     setTimeout(() => {
-      notification.classList.add('show');
+      notification.classList.add("show");
     }, 100);
 
     // Auto-hide if not persistent
     if (!persistent && duration > 0) {
-      const progressBar = notification.querySelector('.notification-progress');
+      const progressBar = notification.querySelector(".notification-progress");
       if (progressBar) {
-        progressBar.style.width = '100%';
+        progressBar.style.width = "100%";
         setTimeout(() => {
-          progressBar.style.width = '0%';
+          progressBar.style.width = "0%";
           progressBar.style.transition = `width ${duration}ms linear`;
         }, 100);
       }
@@ -230,7 +234,7 @@ class NotificationSystem {
   remove(notification) {
     if (!notification || !notification.parentNode) return;
 
-    notification.classList.remove('show');
+    notification.classList.remove("show");
     setTimeout(() => {
       if (notification.parentNode) {
         notification.remove();
@@ -239,28 +243,28 @@ class NotificationSystem {
   }
 
   success(message, options = {}) {
-    return this.show(message, 'success', options);
+    return this.show(message, "success", options);
   }
 
   error(message, options = {}) {
-    return this.show(message, 'error', options);
+    return this.show(message, "error", options);
   }
 
   warning(message, options = {}) {
-    return this.show(message, 'warning', options);
+    return this.show(message, "warning", options);
   }
 
   info(message, options = {}) {
-    return this.show(message, 'info', options);
+    return this.show(message, "info", options);
   }
 
   clear() {
-    const notifications = this.container.querySelectorAll('.notification');
-    notifications.forEach(notification => this.remove(notification));
+    const notifications = this.container.querySelectorAll(".notification");
+    notifications.forEach((notification) => this.remove(notification));
   }
 
   escapeHtml(text) {
-    const div = document.createElement('div');
+    const div = document.createElement("div");
     div.textContent = text;
     return div.innerHTML;
   }
@@ -270,7 +274,7 @@ class NotificationSystem {
 window.NotificationSystem = new NotificationSystem();
 
 // Add convenience methods to window object
-window.showNotification = (message, type = 'info', options = {}) => {
+window.showNotification = (message, type = "info", options = {}) => {
   return window.NotificationSystem.show(message, type, options);
 };
 
@@ -291,11 +295,16 @@ window.showInfo = (message, options = {}) => {
 };
 
 // Global confirmation dialog function
-window.showConfirmationDialog = (title, message, confirmText = 'Confirm', cancelText = 'Cancel') => {
+window.showConfirmationDialog = (
+  title,
+  message,
+  confirmText = "Confirm",
+  cancelText = "Cancel"
+) => {
   return new Promise((resolve) => {
     // Create modal overlay
-    const overlay = document.createElement('div');
-    overlay.className = 'confirmation-overlay';
+    const overlay = document.createElement("div");
+    overlay.className = "confirmation-overlay";
     overlay.style.cssText = `
       position: fixed;
       top: 0;
@@ -311,8 +320,8 @@ window.showConfirmationDialog = (title, message, confirmText = 'Confirm', cancel
     `;
 
     // Create dialog box
-    const dialog = document.createElement('div');
-    dialog.className = 'confirmation-dialog';
+    const dialog = document.createElement("div");
+    dialog.className = "confirmation-dialog";
     dialog.style.cssText = `
       background: white;
       border-radius: 12px;
@@ -352,36 +361,36 @@ window.showConfirmationDialog = (title, message, confirmText = 'Confirm', cancel
     `;
 
     // Add hover effects
-    const confirmBtn = dialog.querySelector('.confirm-btn');
-    const cancelBtn = dialog.querySelector('.cancel-btn');
-    
-    confirmBtn.addEventListener('mouseenter', () => {
-      confirmBtn.style.background = '#c82333';
+    const confirmBtn = dialog.querySelector(".confirm-btn");
+    const cancelBtn = dialog.querySelector(".cancel-btn");
+
+    confirmBtn.addEventListener("mouseenter", () => {
+      confirmBtn.style.background = "#c82333";
     });
-    confirmBtn.addEventListener('mouseleave', () => {
-      confirmBtn.style.background = '#dc3545';
+    confirmBtn.addEventListener("mouseleave", () => {
+      confirmBtn.style.background = "#dc3545";
     });
-    
-    cancelBtn.addEventListener('mouseenter', () => {
-      cancelBtn.style.background = '#5a6268';
+
+    cancelBtn.addEventListener("mouseenter", () => {
+      cancelBtn.style.background = "#5a6268";
     });
-    cancelBtn.addEventListener('mouseleave', () => {
-      cancelBtn.style.background = '#6c757d';
+    cancelBtn.addEventListener("mouseleave", () => {
+      cancelBtn.style.background = "#6c757d";
     });
 
     // Handle button clicks
-    confirmBtn.addEventListener('click', () => {
+    confirmBtn.addEventListener("click", () => {
       document.body.removeChild(overlay);
       resolve(true);
     });
 
-    cancelBtn.addEventListener('click', () => {
+    cancelBtn.addEventListener("click", () => {
       document.body.removeChild(overlay);
       resolve(false);
     });
 
     // Handle overlay click (cancel)
-    overlay.addEventListener('click', (e) => {
+    overlay.addEventListener("click", (e) => {
       if (e.target === overlay) {
         document.body.removeChild(overlay);
         resolve(false);
@@ -390,21 +399,21 @@ window.showConfirmationDialog = (title, message, confirmText = 'Confirm', cancel
 
     // Handle escape key
     const handleEscape = (e) => {
-      if (e.key === 'Escape') {
+      if (e.key === "Escape") {
         document.body.removeChild(overlay);
-        document.removeEventListener('keydown', handleEscape);
+        document.removeEventListener("keydown", handleEscape);
         resolve(false);
       }
     };
-    document.addEventListener('keydown', handleEscape);
+    document.addEventListener("keydown", handleEscape);
 
     overlay.appendChild(dialog);
     document.body.appendChild(overlay);
 
     // Add CSS animations if not already present
-    if (!document.querySelector('#confirmation-styles')) {
-      const styles = document.createElement('style');
-      styles.id = 'confirmation-styles';
+    if (!document.querySelector("#confirmation-styles")) {
+      const styles = document.createElement("style");
+      styles.id = "confirmation-styles";
       styles.textContent = `
         @keyframes fadeIn {
           from { opacity: 0; }
@@ -427,11 +436,16 @@ window.showConfirmationDialog = (title, message, confirmText = 'Confirm', cancel
 };
 
 // Global prompt dialog function
-window.showPromptDialog = (title, message, defaultValue = '', placeholder = '') => {
+window.showPromptDialog = (
+  title,
+  message,
+  defaultValue = "",
+  placeholder = ""
+) => {
   return new Promise((resolve) => {
     // Create modal overlay
-    const overlay = document.createElement('div');
-    overlay.className = 'prompt-overlay';
+    const overlay = document.createElement("div");
+    overlay.className = "prompt-overlay";
     overlay.style.cssText = `
       position: fixed;
       top: 0;
@@ -447,8 +461,8 @@ window.showPromptDialog = (title, message, defaultValue = '', placeholder = '') 
     `;
 
     // Create dialog box
-    const dialog = document.createElement('div');
-    dialog.className = 'prompt-dialog';
+    const dialog = document.createElement("div");
+    dialog.className = "prompt-dialog";
     dialog.style.cssText = `
       background: white;
       border-radius: 12px;
@@ -497,10 +511,10 @@ window.showPromptDialog = (title, message, defaultValue = '', placeholder = '') 
     `;
 
     // Get elements
-    const input = dialog.querySelector('.prompt-input');
-    const okBtn = dialog.querySelector('.ok-btn');
-    const cancelBtn = dialog.querySelector('.cancel-btn');
-    
+    const input = dialog.querySelector(".prompt-input");
+    const okBtn = dialog.querySelector(".ok-btn");
+    const cancelBtn = dialog.querySelector(".cancel-btn");
+
     // Focus input and select text
     setTimeout(() => {
       input.focus();
@@ -510,52 +524,52 @@ window.showPromptDialog = (title, message, defaultValue = '', placeholder = '') 
     }, 100);
 
     // Add hover effects
-    okBtn.addEventListener('mouseenter', () => {
-      okBtn.style.background = '#0056b3';
+    okBtn.addEventListener("mouseenter", () => {
+      okBtn.style.background = "#0056b3";
     });
-    okBtn.addEventListener('mouseleave', () => {
-      okBtn.style.background = '#007bff';
+    okBtn.addEventListener("mouseleave", () => {
+      okBtn.style.background = "#007bff";
     });
-    
-    cancelBtn.addEventListener('mouseenter', () => {
-      cancelBtn.style.background = '#5a6268';
+
+    cancelBtn.addEventListener("mouseenter", () => {
+      cancelBtn.style.background = "#5a6268";
     });
-    cancelBtn.addEventListener('mouseleave', () => {
-      cancelBtn.style.background = '#6c757d';
+    cancelBtn.addEventListener("mouseleave", () => {
+      cancelBtn.style.background = "#6c757d";
     });
 
     // Input focus effects
-    input.addEventListener('focus', () => {
-      input.style.borderColor = '#007bff';
+    input.addEventListener("focus", () => {
+      input.style.borderColor = "#007bff";
     });
-    input.addEventListener('blur', () => {
-      input.style.borderColor = '#e1e5e9';
+    input.addEventListener("blur", () => {
+      input.style.borderColor = "#e1e5e9";
     });
 
     // Handle button clicks
-    okBtn.addEventListener('click', () => {
+    okBtn.addEventListener("click", () => {
       document.body.removeChild(overlay);
       resolve(input.value);
     });
 
-    cancelBtn.addEventListener('click', () => {
+    cancelBtn.addEventListener("click", () => {
       document.body.removeChild(overlay);
       resolve(null);
     });
 
     // Handle Enter key
-    input.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
         document.body.removeChild(overlay);
         resolve(input.value);
-      } else if (e.key === 'Escape') {
+      } else if (e.key === "Escape") {
         document.body.removeChild(overlay);
         resolve(null);
       }
     });
 
     // Handle overlay click (cancel)
-    overlay.addEventListener('click', (e) => {
+    overlay.addEventListener("click", (e) => {
       if (e.target === overlay) {
         document.body.removeChild(overlay);
         resolve(null);

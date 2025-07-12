@@ -427,7 +427,7 @@
           "Approve All",
           "Cancel"
         );
-        
+
         if (!confirmApprove) return;
 
         try {
@@ -469,7 +469,7 @@ ${story.content}
             `;
 
         // Create a modal for story details instead of alert
-        const modal = document.createElement('div');
+        const modal = document.createElement("div");
         modal.style.cssText = `
           position: fixed;
           top: 0;
@@ -482,8 +482,8 @@ ${story.content}
           align-items: center;
           z-index: 10000;
         `;
-        
-        const content = document.createElement('div');
+
+        const content = document.createElement("div");
         content.style.cssText = `
           background: white;
           border-radius: 12px;
@@ -494,7 +494,7 @@ ${story.content}
           overflow-y: auto;
           position: relative;
         `;
-        
+
         content.innerHTML = `
           <button onclick="this.closest('.modal').remove()" style="
             position: absolute;
@@ -508,8 +508,8 @@ ${story.content}
           ">&times;</button>
           <pre style="white-space: pre-wrap; font-family: monospace; margin: 0;">${details}</pre>
         `;
-        
-        modal.className = 'modal';
+
+        modal.className = "modal";
         modal.appendChild(content);
         modal.onclick = (e) => e.target === modal && modal.remove();
         document.body.appendChild(modal);

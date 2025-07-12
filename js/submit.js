@@ -29,7 +29,7 @@ const DRAFT_KEY = "story_draft";
 
 // Check for edit mode
 const urlParams = new URLSearchParams(window.location.search);
-const editId = urlParams.get('edit');
+const editId = urlParams.get("edit");
 let editMode = false;
 let editStory = null;
 
@@ -37,10 +37,10 @@ if (editId) {
   editMode = true;
   // Update page title and UI for edit mode
   document.title = "Edit Story - Voices of Change";
-  const pageHeader = document.querySelector('.page-header h1');
+  const pageHeader = document.querySelector(".page-header h1");
   if (pageHeader) pageHeader.textContent = "Edit Your Story";
-  
-  const submitButton = document.getElementById('submit-story');
+
+  const submitButton = document.getElementById("submit-story");
   if (submitButton) {
     submitButton.innerHTML = '<i class="fas fa-save"></i> Update Story';
   }
@@ -87,9 +87,12 @@ fileInput.addEventListener("change", () => {
     const validation = window.InputSanitizer.validateFileUpload(file);
 
     if (!validation.isValid) {
-      window.showError("File validation failed: " + validation.errors.join(", "), {
-        title: "Invalid File"
-      });
+      window.showError(
+        "File validation failed: " + validation.errors.join(", "),
+        {
+          title: "Invalid File",
+        }
+      );
       fileInput.value = "";
       fileName.textContent = "No file chosen";
       return;
@@ -117,10 +120,10 @@ async function saveDraft() {
 
     const formData = new FormData(storyForm);
     const draftData = {
-      title: formData.get('story-title') || '',
-      content: formData.get('story-content') || '',
-      category: formData.get('story-category') || 'general',
-      isAnonymous: formData.get('anonymous') === 'on'
+      title: formData.get("story-title") || "",
+      content: formData.get("story-content") || "",
+      category: formData.get("story-category") || "general",
+      isAnonymous: formData.get("anonymous") === "on",
     };
 
     // Don't save empty drafts
@@ -134,9 +137,9 @@ async function saveDraft() {
       const result = await window.UmojaDB.saveDraft(draftData);
       if (result.success) {
         window.showSuccess("Draft saved successfully!", {
-          title: "Draft Saved"
+          title: "Draft Saved",
         });
-        
+
         // Clear localStorage backup since it's saved to database
         localStorage.removeItem("story_draft");
       } else {
@@ -147,7 +150,6 @@ async function saveDraft() {
       localStorage.setItem("story_draft", JSON.stringify(draftData));
       window.showSuccess("Draft saved locally!");
     }
-
   } catch (error) {
     console.error("Error saving draft:", error);
     window.showError("Failed to save draft: " + error.message);
@@ -161,7 +163,7 @@ async function saveDraft() {
 // Load draft if exists
 document.addEventListener("DOMContentLoaded", async () => {
   // Wait for notification system
-  await new Promise(resolve => {
+  await new Promise((resolve) => {
     if (window.NotificationSystem) {
       resolve();
     } else {
@@ -176,7 +178,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // Try to load draft from database first, then localStorage
   let draftLoaded = false;
-  
+
   if (window.UmojaDB) {
     try {
       const result = await window.UmojaDB.getAllDrafts();
@@ -184,10 +186,10 @@ document.addEventListener("DOMContentLoaded", async () => {
         // Load the most recent draft
         const latestDraft = result.drafts[0];
         populateFormWithDraft(latestDraft);
-        
+
         window.showInfo("Your latest draft has been loaded", {
           title: "Draft Loaded",
-          duration: 4000
+          duration: 4000,
         });
         draftLoaded = true;
       }
@@ -203,10 +205,10 @@ document.addEventListener("DOMContentLoaded", async () => {
       try {
         const draftData = JSON.parse(savedDraft);
         populateFormWithDraft(draftData);
-        
+
         window.showInfo("A saved draft has been loaded from local storage", {
           title: "Local Draft Loaded",
-          duration: 4000
+          duration: 4000,
         });
       } catch (error) {
         console.error("Error parsing local draft:", error);
@@ -221,21 +223,27 @@ document.addEventListener("DOMContentLoaded", async () => {
 function populateFormWithDraft(draftData) {
   // Populate form fields
   if (draftData.title) {
-    const titleField = document.querySelector('input[name="story-title"], #story-title');
+    const titleField = document.querySelector(
+      'input[name="story-title"], #story-title'
+    );
     if (titleField) titleField.value = draftData.title;
   }
-  
+
   if (draftData.content) {
     storyContent.value = draftData.content;
   }
-  
+
   if (draftData.category) {
-    const categoryField = document.querySelector('select[name="story-category"], #story-category');
+    const categoryField = document.querySelector(
+      'select[name="story-category"], #story-category'
+    );
     if (categoryField) categoryField.value = draftData.category;
   }
-  
-  if (draftData.isAnonymous || draftData.anonymous === 'on') {
-    const anonymousField = document.querySelector('input[name="anonymous"], #anonymous');
+
+  if (draftData.isAnonymous || draftData.anonymous === "on") {
+    const anonymousField = document.querySelector(
+      'input[name="anonymous"], #anonymous'
+    );
     if (anonymousField) anonymousField.checked = true;
   }
 }
@@ -243,18 +251,18 @@ function populateFormWithDraft(draftData) {
 // Load story for edit
 async function loadStoryForEdit() {
   if (!editMode || !editId) return;
-  
+
   try {
     if (!window.UmojaDB) {
       throw new Error("Database not available");
     }
-    
+
     const result = await window.UmojaDB.getStoryById(editId);
     if (result.success && result.story) {
       editStory = result.story;
       populateFormWithDraft(editStory);
       window.showInfo("Story loaded for editing", {
-        title: "Edit Mode"
+        title: "Edit Mode",
       });
     } else {
       throw new Error(result.error || "Story not found");
@@ -264,7 +272,7 @@ async function loadStoryForEdit() {
     window.showError("Failed to load story for editing: " + error.message);
     // Redirect back to profile after error
     setTimeout(() => {
-      window.location.href = 'profile.html';
+      window.location.href = "profile.html";
     }, 3000);
   }
 }
@@ -278,9 +286,12 @@ async function handleSubmission(e) {
   // Rate limiting check
   if (!window.InputSanitizer.checkRateLimit("story_submission", 3, 300000)) {
     // 3 submissions per 5 minutes
-    window.showError("Too many submissions. Please wait before submitting again.", {
-      title: "Rate Limit Exceeded"
-    });
+    window.showError(
+      "Too many submissions. Please wait before submitting again.",
+      {
+        title: "Rate Limit Exceeded",
+      }
+    );
     return;
   }
 
@@ -291,10 +302,12 @@ async function handleSubmission(e) {
   try {
     // Get form data
     const storyText = storyContent.value.trim();
-    const storyTitle = document.getElementById("story-title")?.value?.trim() || "";
+    const storyTitle =
+      document.getElementById("story-title")?.value?.trim() || "";
 
     // Validate and sanitize story content
-    const contentValidation = window.InputSanitizer.validateStoryContent(storyText);
+    const contentValidation =
+      window.InputSanitizer.validateStoryContent(storyText);
     if (!contentValidation.isValid) {
       window.showError(
         "Story content validation failed. Please ensure your story is between 10-5000 characters and contains at least 5 words.",
@@ -307,7 +320,7 @@ async function handleSubmission(e) {
     const sanitizedTitle = window.InputSanitizer.sanitizeText(storyTitle);
     if (sanitizedTitle.length < 3) {
       window.showError("Story title must be at least 3 characters long.", {
-        title: "Invalid Title"
+        title: "Invalid Title",
       });
       return;
     }
@@ -315,15 +328,18 @@ async function handleSubmission(e) {
     // Additional validation
     if (storyText.length < 500) {
       window.showError("Your story must be at least 500 characters long.", {
-        title: "Story Too Short"
+        title: "Story Too Short",
       });
       return;
     }
 
     if (storyText.length > MAX_CHARS) {
-      window.showError(`Your story exceeds the maximum ${MAX_CHARS} character limit.`, {
-        title: "Story Too Long"
-      });
+      window.showError(
+        `Your story exceeds the maximum ${MAX_CHARS} character limit.`,
+        {
+          title: "Story Too Long",
+        }
+      );
       return;
     }
 
@@ -342,7 +358,7 @@ async function handleSubmission(e) {
       const result = await window.UmojaDB.submitStory(submissionData);
       if (result.success) {
         window.showSuccess("Your story has been submitted successfully!", {
-          title: "Story Submitted"
+          title: "Story Submitted",
         });
       } else {
         throw new Error(result.error);
@@ -350,7 +366,7 @@ async function handleSubmission(e) {
     } else {
       // Fallback for demo mode
       window.showSuccess("Story submitted successfully! (Demo mode)", {
-        title: "Story Submitted"
+        title: "Story Submitted",
       });
     }
 
@@ -364,11 +380,10 @@ async function handleSubmission(e) {
 
     // Scroll to top of success message
     submissionSuccess.scrollIntoView({ behavior: "smooth" });
-
   } catch (error) {
     console.error("Submission error:", error);
     window.showError("Failed to submit story: " + error.message, {
-      title: "Submission Failed"
+      title: "Submission Failed",
     });
   } finally {
     // Restore button state

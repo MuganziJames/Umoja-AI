@@ -267,7 +267,7 @@ class AuthGuard {
       "Logout",
       "Cancel"
     );
-    
+
     if (!confirmLogout) {
       return; // User cancelled
     }
