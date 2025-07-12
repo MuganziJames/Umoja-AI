@@ -31,34 +31,33 @@ let UmojaDB = null;
 // Initialize the page
 document.addEventListener("DOMContentLoaded", async () => {
   console.log("🔄 Initializing stories page...");
-  
+
   try {
     // Wait for UmojaConfig and DatabaseManager to be ready
     await waitForDependencies();
-    
+
     // Initialize database
     UmojaDB = await window.DatabaseManager.waitForConfigAndCreate();
     console.log("✅ Database initialized for stories page");
-    
+
     // Load stories from database
     await loadStoriesFromDatabase();
-    
+
     // Set up pagination and display
     updatePagination();
     displayStories();
-    
+
     // Set up event listeners
     setupEventListeners();
-    
+
     // Check URL parameters for any pre-selected filters
     const urlParams = new URLSearchParams(window.location.search);
     const categoryParam = urlParams.get("category");
-    
+
     if (categoryParam && categoryFilter) {
       categoryFilter.value = categoryParam;
       filterStories();
     }
-    
   } catch (error) {
     console.error("❌ Stories page initialization failed:", error);
     showErrorMessage("Failed to load stories. Please refresh the page.");
@@ -69,10 +68,10 @@ document.addEventListener("DOMContentLoaded", async () => {
 async function waitForDependencies() {
   let retries = 0;
   while ((!window.UmojaConfig || !window.DatabaseManager) && retries < 100) {
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise((resolve) => setTimeout(resolve, 100));
     retries++;
   }
-  
+
   if (!window.UmojaConfig || !window.DatabaseManager) {
     throw new Error("Required components not available");
   }
@@ -82,10 +81,10 @@ async function waitForDependencies() {
 async function loadStoriesFromDatabase() {
   try {
     console.log("🔍 Loading stories from database...");
-    
+
     const result = await UmojaDB.getStories();
     console.log("📊 Stories loaded:", result);
-    
+
     if (result?.success && result.stories?.length > 0) {
       allStories = result.stories;
       filteredStories = [...allStories];
@@ -108,7 +107,7 @@ function setupEventListeners() {
   if (searchBtn) {
     searchBtn.addEventListener("click", filterStories);
   }
-  
+
   if (searchInput) {
     searchInput.addEventListener("keyup", (e) => {
       if (e.key === "Enter") {
@@ -121,11 +120,11 @@ function setupEventListeners() {
   if (categoryFilter) {
     categoryFilter.addEventListener("change", filterStories);
   }
-  
+
   if (sortStories) {
     sortStories.addEventListener("change", filterStories);
   }
-  
+
   if (savedStoriesToggle) {
     savedStoriesToggle.addEventListener("change", filterStories);
   }
@@ -156,7 +155,7 @@ function setupEventListeners() {
       }
     });
   }
-  
+
   console.log("🎯 Event listeners set up");
 }
 
@@ -166,13 +165,15 @@ function filterStories() {
     console.warn("Filter elements not found");
     return;
   }
-  
+
   const searchTerm = searchInput.value.toLowerCase().trim();
   const category = categoryFilter.value;
   const sortBy = sortStories.value;
   const showSavedOnly = savedStoriesToggle.checked;
 
-  console.log(`🔧 Filtering: search="${searchTerm}", category="${category}", sort="${sortBy}", savedOnly=${showSavedOnly}`);
+  console.log(
+    `🔧 Filtering: search="${searchTerm}", category="${category}", sort="${sortBy}", savedOnly=${showSavedOnly}`
+  );
 
   // Reset to first page whenever filters change
   currentPage = 1;
@@ -180,7 +181,8 @@ function filterStories() {
   // Filter stories from database data
   filteredStories = allStories.filter((story) => {
     // Text search
-    const matchesSearch = searchTerm === "" ||
+    const matchesSearch =
+      searchTerm === "" ||
       story.title.toLowerCase().includes(searchTerm) ||
       story.content.toLowerCase().includes(searchTerm) ||
       story.author_name.toLowerCase().includes(searchTerm);
@@ -189,7 +191,8 @@ function filterStories() {
     const matchesCategory = category === "all" || story.category === category;
 
     // Saved filter
-    const matchesSaved = !showSavedOnly || savedStories.includes(story.id.toString());
+    const matchesSaved =
+      !showSavedOnly || savedStories.includes(story.id.toString());
 
     return matchesSearch && matchesCategory && matchesSaved;
   });
@@ -197,9 +200,15 @@ function filterStories() {
   // Sort stories
   filteredStories.sort((a, b) => {
     if (sortBy === "newest" || sortBy === "latest") {
-      return new Date(b.published_at || b.created_at) - new Date(a.published_at || a.created_at);
+      return (
+        new Date(b.published_at || b.created_at) -
+        new Date(a.published_at || a.created_at)
+      );
     } else if (sortBy === "oldest") {
-      return new Date(a.published_at || a.created_at) - new Date(b.published_at || b.created_at);
+      return (
+        new Date(a.published_at || a.created_at) -
+        new Date(b.published_at || b.created_at)
+      );
     } else if (sortBy === "alphabetical") {
       return a.title.localeCompare(b.title);
     } else if (sortBy === "popular") {
@@ -208,7 +217,9 @@ function filterStories() {
     return 0;
   });
 
-  console.log(`✅ Filter result: ${filteredStories.length} stories match criteria`);
+  console.log(
+    `✅ Filter result: ${filteredStories.length} stories match criteria`
+  );
 
   // Update pagination and display stories
   updatePagination();
@@ -217,17 +228,17 @@ function filterStories() {
 
 // Reset all filters
 function resetAllFilters() {
-  if (searchInput) searchInput.value = '';
-  if (categoryFilter) categoryFilter.value = 'all';
-  if (sortStories) sortStories.value = 'newest';
+  if (searchInput) searchInput.value = "";
+  if (categoryFilter) categoryFilter.value = "all";
+  if (sortStories) sortStories.value = "newest";
   if (savedStoriesToggle) savedStoriesToggle.checked = false;
-  
+
   filteredStories = [...allStories];
   currentPage = 1;
   updatePagination();
   displayStories();
-  
-  console.log('🔄 All filters reset');
+
+  console.log("🔄 All filters reset");
 }
 
 // Update pagination controls
@@ -248,22 +259,26 @@ function updatePagination() {
 // Display stories for current page
 function displayStories() {
   if (!storyGrid) return;
-  
+
   // Calculate start and end indices for current page
   const startIndex = (currentPage - 1) * storiesPerPage;
   const endIndex = Math.min(
     startIndex + storiesPerPage,
     filteredStories.length
   );
-  
+
   // Get stories for current page
   const paginatedStories = filteredStories.slice(startIndex, endIndex);
-  
-  console.log(`📖 Displaying page ${currentPage}, stories ${startIndex + 1}-${endIndex} of ${filteredStories.length}`);
-  
+
+  console.log(
+    `📖 Displaying page ${currentPage}, stories ${
+      startIndex + 1
+    }-${endIndex} of ${filteredStories.length}`
+  );
+
   // Clear existing content
-  storyGrid.innerHTML = '';
-  
+  storyGrid.innerHTML = "";
+
   if (paginatedStories.length === 0) {
     storyGrid.innerHTML = `
       <div class="no-stories" style="grid-column: 1 / -1; text-align: center; padding: 3rem;">
@@ -275,32 +290,40 @@ function displayStories() {
     `;
     return;
   }
-  
+
   // Display stories
   paginatedStories.forEach((story, index) => {
     const readingTime = Math.ceil((story.content?.length || 0) / 250);
-    const publishDate = new Date(story.published_at || story.created_at).toLocaleDateString();
-    const excerpt = story.summary || story.content.substring(0, 150) + '...';
-    
-    const storyCard = document.createElement('article');
-    storyCard.className = 'story-card';
+    const publishDate = new Date(
+      story.published_at || story.created_at
+    ).toLocaleDateString();
+    const excerpt = story.summary || story.content.substring(0, 150) + "...";
+
+    const storyCard = document.createElement("article");
+    storyCard.className = "story-card";
     storyCard.dataset.storyId = story.id;
-    storyCard.dataset.category = story.category || 'general';
+    storyCard.dataset.category = story.category || "general";
     storyCard.dataset.date = story.published_at || story.created_at;
-    
+
     const isBookmarked = savedStories.includes(story.id.toString());
-    
+
     storyCard.innerHTML = `
       <div class="story-image">
-        ${story.image_url 
-          ? `<img src="${story.image_url}" alt="${story.title}" loading="lazy">` 
-          : `<img src="../images/story1.jpg" alt="${story.title}" loading="lazy">`}
-        <div class="save-story ${isBookmarked ? 'saved' : ''}" data-story-id="${story.id}">
-          <i class="${isBookmarked ? 'fas' : 'far'} fa-bookmark"></i>
+        ${
+          story.image_url
+            ? `<img src="${story.image_url}" alt="${story.title}" loading="lazy">`
+            : `<img src="../images/story1.jpg" alt="${story.title}" loading="lazy">`
+        }
+        <div class="save-story ${isBookmarked ? "saved" : ""}" data-story-id="${
+      story.id
+    }">
+          <i class="${isBookmarked ? "fas" : "far"} fa-bookmark"></i>
         </div>
       </div>
       <div class="story-content">
-        <span class="category">${story.category?.replace('-', ' ') || 'General'}</span>
+        <span class="category">${
+          story.category?.replace("-", " ") || "General"
+        }</span>
         <h3>${story.title}</h3>
         <p>${excerpt}</p>
         <div class="story-meta">
@@ -308,18 +331,22 @@ function displayStories() {
           <span class="date">${publishDate}</span>
           <span class="reading-time">${readingTime} min read</span>
         </div>
-        <a href="#" class="read-more" data-story-id="${story.id}">Read Full Story</a>
+        <a href="#" class="read-more" data-story-id="${
+          story.id
+        }">Read Full Story</a>
       </div>
     `;
-    
+
     storyGrid.appendChild(storyCard);
   });
-  
-  console.log(`✅ Added ${paginatedStories.length} stories to page ${currentPage}`);
-  
+
+  console.log(
+    `✅ Added ${paginatedStories.length} stories to page ${currentPage}`
+  );
+
   // Update pagination display
   if (currentPageSpan) currentPageSpan.textContent = currentPage;
-  
+
   // Set up event listeners for new elements
   setupStoryEventListeners();
 }
@@ -327,27 +354,27 @@ function displayStories() {
 // Set up event listeners for story cards
 function setupStoryEventListeners() {
   // Save/bookmark buttons
-  document.querySelectorAll('.save-story').forEach(button => {
-    button.addEventListener('click', (e) => {
+  document.querySelectorAll(".save-story").forEach((button) => {
+    button.addEventListener("click", (e) => {
       e.stopPropagation();
       const storyId = e.currentTarget.dataset.storyId;
       toggleBookmark(storyId, e.currentTarget);
     });
   });
-  
+
   // Read more buttons - could open modal or navigate to full story
-  document.querySelectorAll('.read-more').forEach(button => {
-    button.addEventListener('click', async (e) => {
+  document.querySelectorAll(".read-more").forEach((button) => {
+    button.addEventListener("click", async (e) => {
       e.preventDefault();
       const storyId = e.currentTarget.dataset.storyId;
       console.log("📖 Opening story:", storyId);
-      
+
       try {
         const storyResult = await UmojaDB.getStoryById(storyId);
         if (storyResult?.success) {
           // Create a modal to display the story
-          const modal = document.createElement('div');
-          modal.className = 'story-modal';
+          const modal = document.createElement("div");
+          modal.className = "story-modal";
           modal.style.cssText = `
             position: fixed;
             top: 0;
@@ -382,27 +409,27 @@ function setupStoryEventListeners() {
               <h2>${storyResult.story.title}</h2>
               <p class="story-author">By ${storyResult.story.author_name}</p>
               <div class="story-full-content">
-                ${storyResult.story.content.replace(/\n/g, '<br>')}
+                ${storyResult.story.content.replace(/\n/g, "<br>")}
               </div>
             </div>
           `;
           document.body.appendChild(modal);
-          
+
           // Close button functionality
-          modal.querySelector('.close-modal').addEventListener('click', () => {
+          modal.querySelector(".close-modal").addEventListener("click", () => {
             modal.remove();
           });
-          
+
           // Close on click outside
-          modal.addEventListener('click', (e) => {
+          modal.addEventListener("click", (e) => {
             if (e.target === modal) {
               modal.remove();
             }
           });
         }
       } catch (error) {
-        console.error('Error loading story:', error);
-        alert('Error loading story. Please try again.');
+        console.error("Error loading story:", error);
+        alert("Error loading story. Please try again.");
       }
     });
   });
@@ -411,20 +438,24 @@ function setupStoryEventListeners() {
 // Toggle bookmark status
 function toggleBookmark(storyId, buttonElement) {
   const isCurrentlySaved = savedStories.includes(storyId);
-  
+
   if (isCurrentlySaved) {
-    savedStories = savedStories.filter(id => id !== storyId);
-    buttonElement.classList.remove('saved');
+    savedStories = savedStories.filter((id) => id !== storyId);
+    buttonElement.classList.remove("saved");
     buttonElement.innerHTML = '<i class="far fa-bookmark"></i>';
   } else {
     savedStories.push(storyId);
-    buttonElement.classList.add('saved');
+    buttonElement.classList.add("saved");
     buttonElement.innerHTML = '<i class="fas fa-bookmark"></i>';
   }
-  
+
   // Save to localStorage
-  localStorage.setItem('savedStories', JSON.stringify(savedStories));
-  console.log(`🔖 Story ${storyId} ${isCurrentlySaved ? 'removed from' : 'added to'} bookmarks`);
+  localStorage.setItem("savedStories", JSON.stringify(savedStories));
+  console.log(
+    `🔖 Story ${storyId} ${
+      isCurrentlySaved ? "removed from" : "added to"
+    } bookmarks`
+  );
 }
 
 // Show error message

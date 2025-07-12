@@ -207,7 +207,9 @@ class StoriesManager {
 
   createStoryCard(story) {
     const readingTime = Math.ceil((story.content?.length || 0) / 250);
-    const publishDate = new Date(story.published_at || story.created_at).toLocaleDateString();
+    const publishDate = new Date(
+      story.published_at || story.created_at
+    ).toLocaleDateString();
     const sentimentEmoji = this.getSentimentEmoji(story.sentiment_data);
 
     return `

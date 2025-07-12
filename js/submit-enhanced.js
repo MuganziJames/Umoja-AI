@@ -133,7 +133,7 @@ async function handleSubmission(e) {
 
   try {
     console.log("🚀 Attempting story submission");
-    
+
     // Wait for database manager to be ready
     if (!window.UmojaDB) {
       console.log("⏳ Waiting for database manager...");
@@ -144,7 +144,9 @@ async function handleSubmission(e) {
     const user = await window.UmojaDB.getCurrentUser();
     if (!user) {
       console.warn("⚠️ User not authenticated, but continuing with submission");
-      alert("Please note: You should be logged in to submit stories. We'll try to submit anyway, but it may not work correctly.");
+      alert(
+        "Please note: You should be logged in to submit stories. We'll try to submit anyway, but it may not work correctly."
+      );
     } else {
       console.log("✅ User authenticated:", user.email);
     }
@@ -204,16 +206,18 @@ async function handleSubmission(e) {
 
     if (result?.success) {
       console.log("✅ Story published successfully!");
-      
+
       // Show prominent success notification
       showNotification(
         "Thank you for uploading your story! Every story matters to us. Your story is now live on the website.",
         "success",
-        8000  // Show for 8 seconds
+        8000 // Show for 8 seconds
       );
-      
+
       // Also show an alert to ensure the user sees it
-      alert("SUCCESS! Your story has been uploaded successfully and is now live on the website!");
+      alert(
+        "SUCCESS! Your story has been uploaded successfully and is now live on the website!"
+      );
 
       // Track successful submission
       try {

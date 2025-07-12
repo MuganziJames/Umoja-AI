@@ -334,7 +334,7 @@
     <script src="../js/navigation.js"></script>
     <script src="../js/main.js"></script>
     <script src="../js/submit-enhanced.js"></script>
-    
+
     <!-- Authentication Check -->
     <script>
       document.addEventListener("DOMContentLoaded", async () => {
@@ -359,14 +359,20 @@
           // Check if user is authenticated
           const user = await window.UmojaDB.getCurrentUser();
           if (!user) {
-            console.warn("User not authenticated. You need to be logged in to save stories.");
-            alert("Please note: You need to be logged in to save stories. Your story won't be saved if you're not logged in.");
+            console.warn(
+              "User not authenticated. You need to be logged in to save stories."
+            );
+            alert(
+              "Please note: You need to be logged in to save stories. Your story won't be saved if you're not logged in."
+            );
           } else {
             console.log("User authenticated:", user.email);
           }
         } catch (error) {
           console.error("Auth check error:", error);
-          alert("There might be an issue with authentication. Your story might not be saved properly if you're not logged in.");
+          alert(
+            "There might be an issue with authentication. Your story might not be saved properly if you're not logged in."
+          );
         }
       });
     </script>

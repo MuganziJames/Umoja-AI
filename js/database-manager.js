@@ -135,9 +135,7 @@ class DatabaseManager {
 
       // Validate required fields (simplified)
       if (!storyData.title || !storyData.content) {
-        throw new Error(
-          "Missing required fields: title or content"
-        );
+        throw new Error("Missing required fields: title or content");
       }
 
       // Get category ID from category slug if category is provided
@@ -223,7 +221,8 @@ class DatabaseManager {
       return {
         success: true,
         story: data,
-        message: "Thank you for uploading your story! Every story matters to us. Your story is now live on the website.",
+        message:
+          "Thank you for uploading your story! Every story matters to us. Your story is now live on the website.",
       };
     } catch (error) {
       console.error("❌ Submit story error:", error);
@@ -282,7 +281,7 @@ class DatabaseManager {
   async getPublicStories(filters = {}) {
     try {
       console.log("🌍 Getting public stories (bypassing RLS)...");
-      
+
       // Use service role or public access to get all approved stories
       let query = this.supabase
         .from("stories")
@@ -330,7 +329,7 @@ class DatabaseManager {
       let query = this.supabase
         .from("stories")
         .select("*")
-        .eq("status", "approved")  // Explicitly filter for approved stories
+        .eq("status", "approved") // Explicitly filter for approved stories
         .not("published_at", "is", null)
         .order("published_at", { ascending: false });
 
@@ -689,7 +688,7 @@ class DatabaseManager {
     try {
       this.ensureInitialized();
       console.log("🔍 DEBUG: Getting ALL stories regardless of status...");
-      
+
       const { data, error } = await this.supabase
         .from("stories")
         .select("id, title, status, published_at, created_at, author_name")
@@ -701,13 +700,14 @@ class DatabaseManager {
       }
 
       console.log("📊 DEBUG: All stories in database:", data);
-      console.log("📊 DEBUG: Stories by status:", 
+      console.log(
+        "📊 DEBUG: Stories by status:",
         data.reduce((acc, story) => {
           acc[story.status] = (acc[story.status] || 0) + 1;
           return acc;
         }, {})
       );
-      
+
       return { success: true, stories: data || [] };
     } catch (error) {
       console.error("DEBUG: Get all stories error:", error);

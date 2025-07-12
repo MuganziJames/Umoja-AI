@@ -190,10 +190,10 @@ class ProfileManager {
 
   createArticleHTML(article) {
     const statusClass = `status-${article.status || "draft"}`;
-    let statusText = 
+    let statusText =
       (article.status || "draft").charAt(0).toUpperCase() +
       (article.status || "draft").slice(1);
-      
+
     // Show "Published" instead of "Approved" for better UX
     if (article.status === "approved") {
       statusText = "Published";
