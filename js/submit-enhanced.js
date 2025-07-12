@@ -45,7 +45,6 @@ function setupEventListeners() {
   // Character count tracking
   if (storyContent) {
     storyContent.addEventListener("input", updateCharacterCount);
-    storyContent.addEventListener("input", debounceModeration);
   }
 
   // Form submission
@@ -133,21 +132,22 @@ async function handleSubmission(e) {
   setButtonLoading(submitBtn, "Submitting Story...");
 
   try {
+    console.log("🚀 Attempting story submission");
+    
     // Wait for database manager to be ready
     if (!window.UmojaDB) {
       console.log("⏳ Waiting for database manager...");
       window.UmojaDB = await window.DatabaseManager.waitForConfigAndCreate();
     }
 
-    // Check authentication
+    // Check authentication - but don't block submission
     const user = await window.UmojaDB.getCurrentUser();
     if (!user) {
-      throw new Error(
-        "You must be signed in to submit a story. Please sign in first."
-      );
+      console.warn("⚠️ User not authenticated, but continuing with submission");
+      alert("Please note: You should be logged in to submit stories. We'll try to submit anyway, but it may not work correctly.");
+    } else {
+      console.log("✅ User authenticated:", user.email);
     }
-
-    console.log("✅ User authenticated:", user.email);
 
     // Collect form data
     const formData = new FormData(storyForm);
@@ -204,10 +204,16 @@ async function handleSubmission(e) {
 
     if (result?.success) {
       console.log("✅ Story published successfully!");
+      
+      // Show prominent success notification
       showNotification(
-        "Story published successfully! It is now live on the website.",
-        "success"
+        "Thank you for uploading your story! Every story matters to us. Your story is now live on the website.",
+        "success",
+        8000  // Show for 8 seconds
       );
+      
+      // Also show an alert to ensure the user sees it
+      alert("SUCCESS! Your story has been uploaded successfully and is now live on the website!");
 
       // Track successful submission
       try {
@@ -443,26 +449,6 @@ function handleFileSelection() {
   }
 }
 
-// Real-time content moderation
-let moderationTimeout;
-function debounceModeration() {
-  clearTimeout(moderationTimeout);
-
-  moderationTimeout = setTimeout(async () => {
-    const content = storyContent?.value.trim();
-    if (content && content.length > 100) {
-      try {
-        const moderation = await window.UmojaAI?.moderateContent(content);
-        if (moderation) {
-          updateModerationIndicator(moderation);
-        }
-      } catch (error) {
-        console.error("Real-time moderation error:", error);
-      }
-    }
-  }, 2000);
-}
-
 // Helper Functions
 function validateForm() {
   const title = document.getElementById("story-title")?.value.trim();
@@ -623,40 +609,6 @@ function displayAISuggestions(suggestions) {
   panel.style.display = "block";
 }
 
-function updateModerationIndicator(moderation) {
-  if (!contentModerationIndicator) {
-    // Create indicator if it doesn't exist
-    const indicator = document.createElement("div");
-    indicator.id = "content-moderation";
-    indicator.className = "content-moderation-indicator";
-    storyContent?.parentNode?.appendChild(indicator);
-  }
-
-  const indicator = document.getElementById("content-moderation");
-  if (!indicator) return;
-
-  if (moderation.flagged) {
-    indicator.innerHTML = `
-            <i class="fas fa-exclamation-triangle"></i>
-            Content may need review. Please ensure your story follows our community guidelines.
-        `;
-    indicator.className = "content-moderation-indicator moderation-warning";
-  } else {
-    indicator.innerHTML = `
-            <i class="fas fa-check-circle"></i>
-            Content looks good!
-        `;
-    indicator.className = "content-moderation-indicator moderation-success";
-
-    // Hide after 3 seconds
-    setTimeout(() => {
-      indicator.style.display = "none";
-    }, 3000);
-  }
-
-  indicator.style.display = "block";
-}
-
 function showSubmissionInsights(story) {
   if (!submissionSuccess || !story) return;
 
@@ -687,7 +639,7 @@ function showSubmissionInsights(story) {
   submissionSuccess.appendChild(insights);
 }
 
-function showNotification(message, type = "info") {
+function showNotification(message, type = "info", duration = 5000) {
   // Remove existing notifications
   const existingNotifications = document.querySelectorAll(".notification");
   existingNotifications.forEach((notification) => notification.remove());
@@ -732,13 +684,20 @@ function showNotification(message, type = "info") {
   // Add to page
   document.body.appendChild(notification);
 
-  // Auto-remove after 5 seconds
+  // Add extra visibility for success messages
+  if (type === "success") {
+    notification.style.fontSize = "16px";
+    notification.style.padding = "16px 20px";
+    notification.style.fontWeight = "bold";
+  }
+
+  // Auto-remove after specified duration
   setTimeout(() => {
     if (notification.parentElement) {
       notification.style.animation = "slideIn 0.3s ease reverse";
       setTimeout(() => notification.remove(), 300);
     }
-  }, 5000);
+  }, duration);
 }
 
 // Export functions for global access

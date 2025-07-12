@@ -134,7 +134,7 @@ class ProfileManager {
 
   updateStatistics() {
     const publishedCount = this.userArticles.filter(
-      (article) => article.status === "published"
+      (article) => article.status === "approved"
     ).length;
     const draftCount = this.userArticles.filter(
       (article) => article.status === "draft"
@@ -163,7 +163,7 @@ class ProfileManager {
       switch (tab) {
         case "published":
           filteredArticles = this.userArticles.filter(
-            (article) => article.status === "published"
+            (article) => article.status === "approved"
           );
           break;
         case "drafts":
@@ -190,9 +190,14 @@ class ProfileManager {
 
   createArticleHTML(article) {
     const statusClass = `status-${article.status || "draft"}`;
-    const statusText =
+    let statusText = 
       (article.status || "draft").charAt(0).toUpperCase() +
       (article.status || "draft").slice(1);
+      
+    // Show "Published" instead of "Approved" for better UX
+    if (article.status === "approved") {
+      statusText = "Published";
+    }
     const createdDate = new Date(article.created_at).toLocaleDateString();
     const updatedDate = new Date(
       article.updated_at || article.created_at
@@ -215,7 +220,7 @@ class ProfileManager {
         </div>
         <div class="article-actions">
           ${
-            article.status === "published"
+            article.status === "approved"
               ? `<button class="action-btn view-btn" onclick="profileManager.viewArticle('${article.id}')"><i class="fas fa-eye"></i> View</button>`
               : ""
           }

@@ -123,7 +123,8 @@ class DatabaseManager {
     try {
       this.ensureInitialized();
 
-      console.log("🔍 Starting story submission with data:", storyData);
+      console.log("🔍 STORY SUBMISSION STARTED:", storyData);
+      console.log("⏱️ Time:", new Date().toISOString());
 
       const user = await this.getCurrentUser();
       if (!user) {
@@ -132,10 +133,10 @@ class DatabaseManager {
 
       console.log("✅ User authenticated:", user.email);
 
-      // Validate required fields
-      if (!storyData.title || !storyData.content || !storyData.authorName) {
+      // Validate required fields (simplified)
+      if (!storyData.title || !storyData.content) {
         throw new Error(
-          "Missing required fields: title, content, or authorName"
+          "Missing required fields: title or content"
         );
       }
 
@@ -155,23 +156,6 @@ class DatabaseManager {
         } else {
           console.warn("⚠️ Category not found, will use default");
         }
-      }
-
-      // Simple content moderation (since AI is disabled)
-      const harmfulPatterns = [
-        /\b(hate|violence|threat|kill|die|suicide)\b/i,
-        /\b(f\*\*k|sh\*t)\b/i,
-      ];
-
-      const contentFlagged = harmfulPatterns.some((pattern) =>
-        pattern.test(storyData.content)
-      );
-      if (contentFlagged) {
-        return {
-          success: false,
-          error:
-            "Content contains inappropriate language. Please review and modify your story.",
-        };
       }
 
       // Calculate reading time (200 words per minute)
@@ -214,7 +198,7 @@ class DatabaseManager {
         moderator_id: null,
         moderation_notes: "Auto-approved on submission",
         rejection_reason: null,
-        published_at: new Date().toISOString(), // CHANGED: Published immediately
+        published_at: new Date().toISOString(), // Published immediately
         featured_at: null,
         archived_at: null,
       };
@@ -234,11 +218,12 @@ class DatabaseManager {
       }
 
       console.log("✅ Story inserted successfully:", data);
+      console.log("✅ UPLOAD SUCCESS AT:", new Date().toISOString());
 
       return {
         success: true,
         story: data,
-        message: "Story published successfully and is now live!",
+        message: "Thank you for uploading your story! Every story matters to us. Your story is now live on the website.",
       };
     } catch (error) {
       console.error("❌ Submit story error:", error);
@@ -268,7 +253,7 @@ class DatabaseManager {
         `
         )
         .eq("status", "approved")
-        .order("created_at", { ascending: false });
+        .order("published_at", { ascending: false }); // Sort by published_at instead of created_at
 
       // Apply filters
       if (filters.category && filters.category !== "all") {
@@ -315,7 +300,7 @@ class DatabaseManager {
           categories(name, slug, color)
         `
         )
-        .order("created_at", { ascending: false });
+        .order("published_at", { ascending: false });
 
       // Apply filters
       if (filters.status) {
@@ -396,7 +381,7 @@ class DatabaseManager {
         .or(
           `title.ilike.%${searchTerm}%,content.ilike.%${searchTerm}%,author_name.ilike.%${searchTerm}%`
         )
-        .order("created_at", { ascending: false });
+        .order("published_at", { ascending: false });
 
       if (error) throw error;
       return { success: true, stories: data };

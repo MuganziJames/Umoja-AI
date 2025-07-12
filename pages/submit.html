@@ -333,7 +333,9 @@
     <script src="../js/database-manager.js"></script>
     <script src="../js/navigation.js"></script>
     <script src="../js/main.js"></script>
-    <!-- Check authentication before loading submit features -->
+    <script src="../js/submit-enhanced.js"></script>
+    
+    <!-- Authentication Check -->
     <script>
       document.addEventListener("DOMContentLoaded", async () => {
         try {
@@ -357,23 +359,14 @@
           // Check if user is authenticated
           const user = await window.UmojaDB.getCurrentUser();
           if (!user) {
-            // User not authenticated, redirect to auth page
-            window.location.href = `auth.html?return=${encodeURIComponent(
-              window.location.pathname
-            )}`;
-            return;
+            console.warn("User not authenticated. You need to be logged in to save stories.");
+            alert("Please note: You need to be logged in to save stories. Your story won't be saved if you're not logged in.");
+          } else {
+            console.log("User authenticated:", user.email);
           }
-
-          // User is authenticated, load the submit script
-          const script = document.createElement("script");
-          script.src = "../js/submit-enhanced.js";
-          document.body.appendChild(script);
         } catch (error) {
           console.error("Auth check error:", error);
-          // Redirect to auth page on error
-          window.location.href = `auth.html?return=${encodeURIComponent(
-            window.location.pathname
-          )}`;
+          alert("There might be an issue with authentication. Your story might not be saved properly if you're not logged in.");
         }
       });
     </script>
