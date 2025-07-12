@@ -242,17 +242,12 @@ class DatabaseManager {
 
       console.log("🔍 Getting stories with filters:", filters);
 
-      // Build query with proper joins for author info
+      // Build query without joins since relationships don't exist
       let query = this.supabase
         .from("stories")
-        .select(
-          `
-          *,
-          user_profiles(full_name, avatar_url, username),
-          categories(name, slug, color)
-        `
-        )
+        .select("*")
         .eq("status", "approved")
+        .not("published_at", "is", null)
         .order("published_at", { ascending: false }); // Sort by published_at instead of created_at
 
       // Apply filters
@@ -293,13 +288,8 @@ class DatabaseManager {
 
       let query = this.supabase
         .from("stories")
-        .select(
-          `
-          *,
-          user_profiles(full_name, avatar_url, username),
-          categories(name, slug, color)
-        `
-        )
+        .select("*")
+        .not("published_at", "is", null)
         .order("published_at", { ascending: false });
 
       // Apply filters
@@ -339,10 +329,10 @@ class DatabaseManager {
       this.ensureInitialized();
 
       const { data, error } = await this.supabase
-        .from(this.tables.STORIES)
+        .from("stories")
         .select("*")
         .eq("id", id)
-        .eq("status", this.status.APPROVED)
+        .eq("status", "approved")
         .single();
 
       if (error) throw error;
@@ -375,9 +365,10 @@ class DatabaseManager {
   async searchStories(searchTerm) {
     try {
       const { data, error } = await this.supabase
-        .from(this.tables.STORIES)
+        .from("stories")
         .select("*")
-        .eq("status", this.status.APPROVED)
+        .eq("status", "approved")
+        .not("published_at", "is", null)
         .or(
           `title.ilike.%${searchTerm}%,content.ilike.%${searchTerm}%,author_name.ilike.%${searchTerm}%`
         )
@@ -649,6 +640,37 @@ class DatabaseManager {
         callback
       )
       .subscribe();
+  }
+
+  // Debug function to check what stories exist
+  async debugGetAllStories() {
+    try {
+      this.ensureInitialized();
+      console.log("🔍 DEBUG: Getting ALL stories regardless of status...");
+      
+      const { data, error } = await this.supabase
+        .from("stories")
+        .select("id, title, status, published_at, created_at, author_name")
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("❌ DEBUG: Error getting all stories:", error);
+        throw error;
+      }
+
+      console.log("📊 DEBUG: All stories in database:", data);
+      console.log("📊 DEBUG: Stories by status:", 
+        data.reduce((acc, story) => {
+          acc[story.status] = (acc[story.status] || 0) + 1;
+          return acc;
+        }, {})
+      );
+      
+      return { success: true, stories: data || [] };
+    } catch (error) {
+      console.error("DEBUG: Get all stories error:", error);
+      return { success: false, error: error.message, stories: [] };
+    }
   }
 }
 
