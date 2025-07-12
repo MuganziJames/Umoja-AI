@@ -134,6 +134,16 @@ class ProfileManager {
       const result = await this.db.getUserStories(this.currentUser.id);
       if (result.success) {
         this.userArticles = result.stories || [];
+        
+        // Also load drafts separately
+        const draftResult = await this.db.getAllDrafts();
+        if (draftResult.success) {
+          // Merge drafts with articles, avoiding duplicates
+          const draftIds = this.userArticles.filter(a => a.status === 'draft').map(a => a.id);
+          const newDrafts = draftResult.drafts.filter(d => !draftIds.includes(d.id));
+          this.userArticles = [...this.userArticles, ...newDrafts];
+        }
+        
         this.renderArticles();
       } else {
         console.error("Failed to load articles:", result.error);
@@ -231,22 +241,31 @@ class ProfileManager {
                 ? `<span><i class="fas fa-eye"></i> ${article.views} views</span>`
                 : ""
             }
+            ${
+              article.status === "draft"
+                ? `<span class="draft-indicator"><i class="fas fa-file-alt"></i> Draft</span>`
+                : ""
+            }
           </div>
         </div>
         <div class="article-actions">
           ${
             article.status === "approved"
-              ? `<button class="action-btn view-btn" onclick="profileManager.viewArticle('${article.id}')"><i class="fas fa-eye"></i> View</button>`
+              ? `<button class="action-btn view-btn" onclick="profileManager.viewArticle('${article.id}')">
+                   <i class="fas fa-eye"></i> View
+                 </button>`
               : ""
           }
           <button class="action-btn edit-btn" onclick="profileManager.editArticle('${
             article.id
-          }')"><i class="fas fa-edit"></i> Edit</button>
+          }')">
+            <i class="fas fa-edit"></i> ${article.status === "draft" ? "Continue" : "Edit"}
+          </button>
           <button class="action-btn delete-btn" onclick="profileManager.deleteArticle('${
             article.id
-          }', '${this.escapeHtml(
-      article.title || "Untitled"
-    )}')"><i class="fas fa-trash"></i> Delete</button>
+          }', '${this.escapeHtml(article.title || "Untitled")}', '${article.status}')">
+            <i class="fas fa-trash"></i> Delete
+          </button>
         </div>
       </div>
     `;
@@ -346,33 +365,191 @@ class ProfileManager {
     window.location.href = `submit.html?edit=${articleId}`;
   }
 
-  async deleteArticle(articleId, title) {
-    if (
-      !confirm(
-        `Are you sure you want to delete "${title}"? This action cannot be undone.`
-      )
-    ) {
+  async deleteArticle(articleId, title, status = 'story') {
+    // Create custom confirmation dialog
+    const isConfirmed = await this.showConfirmationDialog(
+      `Delete ${status === 'draft' ? 'Draft' : 'Story'}`,
+      `Are you sure you want to delete "${title}"?`,
+      `This ${status === 'draft' ? 'draft' : 'story'} will be permanently removed and cannot be recovered.`,
+      status === 'draft' ? 'warning' : 'error'
+    );
+
+    if (!isConfirmed) {
       return;
     }
 
     try {
-      const result = await this.db.deleteStory(articleId);
-      if (result.success) {
-        this.showSuccess("Article deleted successfully");
-        // Reload articles
-        await this.loadUserArticles();
-        this.updateStatistics();
+      // Show loading notification
+      const loadingNotification = window.showInfo(`Deleting ${status}...`, {
+        title: "Please wait",
+        persistent: true,
+        closable: false
+      });
+
+      let result;
+      if (status === 'draft') {
+        result = await this.db.deleteDraft(articleId);
       } else {
-        this.showError("Failed to delete article: " + result.error);
+        result = await this.db.deleteStory(articleId);
+      }
+
+      // Remove loading notification
+      window.NotificationSystem.remove(loadingNotification);
+
+      if (result.success) {
+        window.showSuccess(`${status === 'draft' ? 'Draft' : 'Story'} deleted successfully`, {
+          title: "Deleted Successfully"
+        });
+        
+        // Remove from UI immediately for better UX
+        const articleElement = document.querySelector(`[data-article-id="${articleId}"]`);
+        if (articleElement) {
+          articleElement.style.transition = 'all 0.3s ease';
+          articleElement.style.opacity = '0';
+          articleElement.style.transform = 'translateX(-20px)';
+          setTimeout(() => {
+            articleElement.remove();
+          }, 300);
+        }
+        
+        // Reload articles after a short delay
+        setTimeout(async () => {
+          await this.loadUserArticles();
+          this.updateStatistics();
+        }, 500);
+      } else {
+        window.showError(`Failed to delete ${status}: ${result.error}`, {
+          title: "Delete Failed"
+        });
       }
     } catch (error) {
-      console.error("Error deleting article:", error);
-      this.showError("Failed to delete article");
+      console.error(`Error deleting ${status}:`, error);
+      window.showError(`Failed to delete ${status}`, {
+        title: "Delete Failed"
+      });
     }
   }
 
+  async showConfirmationDialog(title, message, description, type = 'warning') {
+    return new Promise((resolve) => {
+      // Create modal overlay
+      const overlay = document.createElement('div');
+      overlay.className = 'confirmation-overlay';
+      overlay.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.7);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10001;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+      `;
+
+      // Create modal
+      const modal = document.createElement('div');
+      modal.className = 'confirmation-modal';
+      modal.style.cssText = `
+        background: white;
+        border-radius: 12px;
+        padding: 24px;
+        max-width: 400px;
+        width: 90%;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        transform: scale(0.9);
+        transition: transform 0.3s ease;
+      `;
+
+      const iconColors = {
+        warning: '#f59e0b',
+        error: '#ef4444',
+        info: '#3b82f6'
+      };
+
+      const iconNames = {
+        warning: 'fas fa-exclamation-triangle',
+        error: 'fas fa-trash',
+        info: 'fas fa-info-circle'
+      };
+
+      modal.innerHTML = `
+        <div style="text-align: center; margin-bottom: 20px;">
+          <i class="${iconNames[type]}" style="font-size: 48px; color: ${iconColors[type]}; margin-bottom: 16px;"></i>
+          <h3 style="margin: 0; color: #1f2937; font-size: 20px;">${title}</h3>
+          <p style="margin: 8px 0; color: #4b5563; font-size: 16px;">${message}</p>
+          <p style="margin: 0; color: #6b7280; font-size: 14px;">${description}</p>
+        </div>
+        <div style="display: flex; gap: 12px; justify-content: flex-end;">
+          <button class="cancel-btn" style="
+            padding: 8px 16px;
+            border: 2px solid #d1d5db;
+            background: white;
+            color: #374151;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+          ">Cancel</button>
+          <button class="confirm-btn" style="
+            padding: 8px 16px;
+            border: none;
+            background: ${iconColors[type]};
+            color: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+          ">Delete</button>
+        </div>
+      `;
+
+      overlay.appendChild(modal);
+      document.body.appendChild(overlay);
+
+      // Show modal with animation
+      setTimeout(() => {
+        overlay.style.opacity = '1';
+        modal.style.transform = 'scale(1)';
+      }, 10);
+
+      // Handle clicks
+      const handleClose = (confirmed) => {
+        overlay.style.opacity = '0';
+        modal.style.transform = 'scale(0.9)';
+        setTimeout(() => {
+          document.body.removeChild(overlay);
+          resolve(confirmed);
+        }, 300);
+      };
+
+      modal.querySelector('.cancel-btn').addEventListener('click', () => handleClose(false));
+      modal.querySelector('.confirm-btn').addEventListener('click', () => handleClose(true));
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) handleClose(false);
+      });
+
+      // Handle escape key
+      const handleEscape = (e) => {
+        if (e.key === 'Escape') {
+          document.removeEventListener('keydown', handleEscape);
+          handleClose(false);
+        }
+      };
+      document.addEventListener('keydown', handleEscape);
+    });
+  }
+
   async logout() {
-    if (!confirm("Are you sure you want to logout?")) {
+    const isConfirmed = await this.showConfirmationDialog(
+      "Sign Out",
+      "Are you sure you want to sign out?",
+      "You will need to sign in again to access your account.",
+      "info"
+    );
+
+    if (!isConfirmed) {
       return;
     }
 
@@ -388,10 +565,16 @@ class ProfileManager {
         this.currentUser = null;
         this.userArticles = [];
 
-        // Redirect to home page
-        window.location.href = "../index.html";
+        window.showSuccess("Successfully signed out", {
+          title: "Goodbye!"
+        });
+
+        // Redirect to home page after a short delay
+        setTimeout(() => {
+          window.location.href = "../index.html";
+        }, 1500);
       } else {
-        this.showError("Failed to logout: " + result.error);
+        window.showError("Failed to logout: " + result.error);
       }
     } catch (error) {
       console.error("Error during logout:", error);
@@ -399,13 +582,14 @@ class ProfileManager {
       if (window.SessionManager) {
         window.SessionManager.logout();
       }
-      this.showError("Failed to logout");
+      window.showError("Failed to logout");
     }
   }
 
   editProfile() {
-    // For now, just show an alert. This could be expanded to a modal or separate page
-    alert("Profile editing feature coming soon!");
+    window.showInfo("Profile editing feature is coming soon!", {
+      title: "Feature Coming Soon"
+    });
   }
 
   escapeHtml(text) {
@@ -415,13 +599,11 @@ class ProfileManager {
   }
 
   showError(message) {
-    // Simple error display - could be enhanced with a toast or modal
-    alert("Error: " + message);
+    window.showError(message);
   }
 
   showSuccess(message) {
-    // Simple success display - could be enhanced with a toast or modal
-    alert("Success: " + message);
+    window.showSuccess(message);
   }
 }
 

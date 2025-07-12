@@ -463,33 +463,8 @@ class AuthManager {
   }
 
   showNotification(message, type = "info") {
-    // Remove existing notification
-    const existing = document.querySelector(".notification");
-    if (existing) {
-      existing.remove();
-    }
-
-    // Create new notification
-    const notification = document.createElement("div");
-    notification.className = `notification ${type}`;
-    notification.textContent = message;
-
-    document.body.appendChild(notification);
-
-    // Show notification
-    setTimeout(() => {
-      notification.classList.add("show");
-    }, 100);
-
-    // Hide notification after 5 seconds
-    setTimeout(() => {
-      notification.classList.remove("show");
-      setTimeout(() => {
-        if (notification.parentNode) {
-          notification.remove();
-        }
-      }, 300);
-    }, 5000);
+    // All notifications removed as requested - just log to console
+    console.log(`[AUTH ${type.toUpperCase()}] ${message}`);
   }
 
   async checkAuthStatus() {

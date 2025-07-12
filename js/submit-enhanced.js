@@ -29,15 +29,20 @@ const DRAFT_KEY = "story_draft";
 document.addEventListener("DOMContentLoaded", initializePage);
 
 async function initializePage() {
-  // Set up event listeners
-  setupEventListeners();
+  try {
+    // Set up event listeners
+    setupEventListeners();
 
-  // Load existing draft
-  await loadDraft();
+    // Load existing draft
+    await loadDraft();
 
-  // Initialize character count
-  if (storyContent) {
-    updateCharacterCount();
+    // Initialize character count
+    if (storyContent) {
+      updateCharacterCount();
+    }
+  } catch (error) {
+    console.error("Error initializing submit page:", error);
+    // Don't throw the error further to avoid unhandled promise rejection
   }
 }
 
@@ -117,6 +122,135 @@ function updateCharacterCount() {
   }
 }
 
+// Button state management
+function setButtonLoading(button, loadingText) {
+  if (!button) return;
+  
+  button.originalText = button.textContent;
+  button.textContent = loadingText;
+  button.disabled = true;
+  button.style.opacity = "0.7";
+  button.style.cursor = "not-allowed";
+}
+
+function resetButtonState(button, originalText) {
+  if (!button) return;
+  
+  button.textContent = originalText || button.originalText || button.textContent;
+  button.disabled = false;
+  button.style.opacity = "1";
+  button.style.cursor = "pointer";
+}
+
+// Notification helper function
+function showNotification(message, type = "info", duration = 5000) {
+  // Use global notification system if available
+  if (window.NotificationSystem) {
+    switch (type) {
+      case "success":
+        return window.showSuccess?.(message, { duration });
+      case "error":
+        return window.showError?.(message, { duration });
+      case "warning":
+        return window.showWarning?.(message, { duration });
+      default:
+        return window.showInfo?.(message, { duration });
+    }
+  }
+  
+  // Fallback to console if notification system not available
+  console.log(`[${type.toUpperCase()}] ${message}`);
+}
+
+// Validation functions
+function validateForm() {
+  const title = document.getElementById("story-title")?.value?.trim();
+  const content = document.getElementById("story-content")?.value?.trim();
+  const authorName = document.getElementById("full-name")?.value?.trim();
+  const category = document.getElementById("story-category")?.value;
+
+  // Clear any existing error messages
+  clearFieldErrors();
+
+  let isValid = true;
+
+  // Validate title
+  if (!title) {
+    showFieldError("story-title", "Story title is required");
+    isValid = false;
+  } else if (title.length < 5) {
+    showFieldError("story-title", "Title must be at least 5 characters long");
+    isValid = false;
+  }
+
+  // Validate content
+  if (!content) {
+    showFieldError("story-content", "Story content is required");
+    isValid = false;
+  } else if (content.length < 100) {
+    showFieldError("story-content", "Story must be at least 100 characters long");
+    isValid = false;
+  } else if (content.length > MAX_CHARS) {
+    showFieldError("story-content", `Story must be less than ${MAX_CHARS} characters`);
+    isValid = false;
+  }
+
+  // Validate author name
+  if (!authorName) {
+    showFieldError("full-name", "Author name is required");
+    isValid = false;
+  }
+
+  // Validate category
+  if (!category) {
+    showFieldError("story-category", "Please select a category");
+    isValid = false;
+  }
+
+  return isValid;
+}
+
+function showFieldError(fieldId, message) {
+  const field = document.getElementById(fieldId);
+  if (!field) return;
+
+  // Add error styling
+  field.style.borderColor = "#dc3545";
+  field.style.backgroundColor = "#fff5f5";
+
+  // Create or update error message
+  let errorDiv = field.parentNode.querySelector(".field-error");
+  if (!errorDiv) {
+    errorDiv = document.createElement("div");
+    errorDiv.className = "field-error";
+    errorDiv.style.cssText = `
+      color: #dc3545;
+      font-size: 12px;
+      margin-top: 4px;
+      display: block;
+    `;
+    field.parentNode.appendChild(errorDiv);
+  }
+  errorDiv.textContent = message;
+
+  // Show notification for better visibility
+  window.showError?.(message) || showNotification(message, "error");
+}
+
+function clearFieldErrors() {
+  const errorDivs = document.querySelectorAll(".field-error");
+  errorDivs.forEach(div => div.remove());
+
+  const fields = ["story-title", "story-content", "full-name", "story-category"];
+  fields.forEach(fieldId => {
+    const field = document.getElementById(fieldId);
+    if (field) {
+      field.style.borderColor = "";
+      field.style.backgroundColor = "";
+    }
+  });
+}
+
 // Enhanced form submission with comprehensive error handling
 async function handleSubmission(e) {
   e.preventDefault();
@@ -144,7 +278,7 @@ async function handleSubmission(e) {
     const user = await window.UmojaDB.getCurrentUser();
     if (!user) {
       console.warn("⚠️ User not authenticated, but continuing with submission");
-      alert(
+      window.showWarning?.(
         "Please note: You should be logged in to submit stories. We'll try to submit anyway, but it may not work correctly."
       );
     } else {
@@ -199,24 +333,32 @@ async function handleSubmission(e) {
 
     console.log("🚀 Submitting to database...");
 
-    // Submit to database
-    const result = await window.UmojaDB.submitStory(storyData);
+    // Submit or update story based on mode
+    let result;
+    if (editMode && editId) {
+      console.log("📝 Updating existing story:", editId);
+      result = await window.UmojaDB.updateStory(editId, storyData, user.id);
+    } else {
+      console.log("📝 Submitting new story");
+      result = await window.UmojaDB.submitStory(storyData);
+    }
 
     console.log("📝 Submission result:", result);
 
     if (result?.success) {
-      console.log("✅ Story published successfully!");
+      console.log(`✅ Story ${editMode ? 'updated' : 'published'} successfully!`);
 
       // Show prominent success notification
-      showNotification(
-        "Thank you for uploading your story! Every story matters to us. Your story is now live on the website.",
+      const message = editMode 
+        ? "Your story has been updated successfully!"
+        : "Thank you for uploading your story! Every story matters to us. Your story is now live on the website.";
+      
+      window.showSuccess?.(message, {
+        title: editMode ? "Story Updated!" : "SUCCESS!",
+        duration: 8000
+      }) || showNotification(message,
         "success",
         8000 // Show for 8 seconds
-      );
-
-      // Also show an alert to ensure the user sees it
-      alert(
-        "SUCCESS! Your story has been uploaded successfully and is now live on the website!"
       );
 
       // Track successful submission
@@ -383,14 +525,16 @@ async function handleSaveDraft(e) {
 // Load draft functionality
 async function loadDraft() {
   try {
-    // Try to load from database first
-    const result = await window.UmojaDB?.getDraft();
+    // Wait for database to be available before trying to load draft
+    if (window.UmojaDB) {
+      const result = await window.UmojaDB.getDraft();
 
-    if (result?.success && result.draft) {
-      populateFormWithDraft(result.draft);
-      const location = result.location === "local" ? "local" : "cloud";
-      showNotification(`Draft loaded from ${location} storage!`, "info");
-      return;
+      if (result?.success && result.draft) {
+        populateFormWithDraft(result.draft);
+        const location = result.location === "local" ? "local" : "cloud";
+        showNotification(`Draft loaded from ${location} storage!`, "info");
+        return;
+      }
     }
 
     // Fallback to localStorage
@@ -412,6 +556,15 @@ async function loadDraft() {
     } catch (fallbackError) {
       console.error("Fallback draft load error:", fallbackError);
     }
+  }
+}
+
+function clearLocalDraft() {
+  try {
+    localStorage.removeItem(DRAFT_KEY);
+    console.log("✅ Local draft cleared");
+  } catch (error) {
+    console.error("Error clearing local draft:", error);
   }
 }
 
@@ -453,262 +606,290 @@ function handleFileSelection() {
   }
 }
 
-// Helper Functions
-function validateForm() {
-  const title = document.getElementById("story-title")?.value.trim();
-  const content = storyContent?.value.trim();
-  const authorName = document.getElementById("full-name")?.value.trim();
-  const category = document.getElementById("story-category")?.value;
+// Enhanced Draft Management and Edit Mode
+let editMode = false;
+let editStory = null;
 
-  console.log("🔍 Validating form:", {
-    title: !!title,
-    content: !!content,
-    authorName: !!authorName,
-    category: !!category,
+// Check for edit mode
+const urlParams = new URLSearchParams(window.location.search);
+const editId = urlParams.get('edit');
+
+if (editId) {
+  editMode = true;
+  // Update page title and UI for edit mode
+  document.title = "Edit Story - Voices of Change";
+  const pageHeader = document.querySelector('.page-header h1');
+  if (pageHeader) pageHeader.textContent = "Edit Your Story";
+  
+  const submitButton = document.getElementById('submit-story');
+  if (submitButton) {
+    submitButton.innerHTML = '<i class="fas fa-save"></i> Update Story';
+  }
+}
+
+async function loadStoryForEdit() {
+  if (!editMode || !editId) return;
+  
+  try {
+    if (!window.UmojaDB) {
+      throw new Error("Database not available");
+    }
+    
+    const result = await window.UmojaDB.getStoryById(editId);
+    if (result.success && result.story) {
+      editStory = result.story;
+      populateFormWithStory(editStory);
+      
+      window.showInfo?.("Story loaded for editing", {
+        title: "Edit Mode"
+      });
+    } else {
+      throw new Error(result.error || "Story not found");
+    }
+  } catch (error) {
+    console.error("Error loading story for edit:", error);
+    window.showError?.("Failed to load story for editing: " + error.message);
+    // Redirect back to profile after error
+    setTimeout(() => {
+      window.location.href = 'profile.html';
+    }, 3000);
+  }
+}
+
+function populateFormWithStory(story) {
+  // Populate form fields
+  if (story.title) {
+    const titleField = document.querySelector('input[name="story-title"], #story-title');
+    if (titleField) titleField.value = story.title;
+  }
+  
+  if (story.content && storyContent) {
+    storyContent.value = story.content;
+  }
+  
+  if (story.category) {
+    const categoryField = document.querySelector('select[name="story-category"], #story-category');
+    if (categoryField) categoryField.value = story.category;
+  }
+  
+  if (story.is_anonymous) {
+    const anonymousField = document.querySelector('input[name="anonymous"], #anonymous');
+    if (anonymousField) anonymousField.checked = true;
+  }
+  
+  // Update character count
+  updateCharacterCount();
+}
+
+// Enhanced save draft functionality  
+async function saveDraftEnhanced() {
+  try {
+    // Show loading state
+    const saveDraftBtn = document.getElementById("save-draft");
+    if (saveDraftBtn) {
+      const originalText = saveDraftBtn.textContent;
+      saveDraftBtn.disabled = true;
+      saveDraftBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+    }
+
+    const formData = new FormData(storyForm);
+    const draftData = {
+      title: formData.get('story-title') || '',
+      content: formData.get('story-content') || '',
+      category: formData.get('story-category') || 'general',
+      isAnonymous: formData.get('anonymous') === 'on'
+    };
+
+    // Don't save empty drafts
+    if (!draftData.title.trim() && !draftData.content.trim()) {
+      window.showWarning?.("Please add some content before saving as draft");
+      return;
+    }
+
+    // Use database manager if available
+    if (window.UmojaDB) {
+      const draftId = editMode ? editId : null;
+      const result = await window.UmojaDB.saveDraft(draftData, draftId);
+      if (result.success) {
+        window.showSuccess?.("Draft saved successfully!", {
+          title: "Draft Saved"
+        });
+        
+        // Clear localStorage backup since it's saved to database
+        localStorage.removeItem("story_draft");
+      } else {
+        throw new Error(result.error);
+      }
+    } else {
+      // Fallback to localStorage
+      localStorage.setItem("story_draft", JSON.stringify(draftData));
+      window.showSuccess?.("Draft saved locally!");
+    }
+
+  } catch (error) {
+    console.error("Error saving draft:", error);
+    window.showError?.("Failed to save draft: " + error.message);
+  } finally {
+    // Restore button state
+    const saveDraftBtn = document.getElementById("save-draft");
+    if (saveDraftBtn) {
+      saveDraftBtn.disabled = false;
+      saveDraftBtn.innerHTML = '<i class="fas fa-save"></i> Save Draft';
+    }
+  }
+}
+
+// Character count update function
+function updateCharacterCount() {
+  if (!storyContent || !currentCount) return;
+  
+  const text = storyContent.value;
+  const chars = text.length;
+  const words = text.trim() === "" ? 0 : text.trim().split(/\s+/).length;
+  const maxChars = parseInt(maxCount?.textContent || "5000", 10);
+  const warningThreshold = maxChars * 0.8;
+
+  // Update counts
+  if (currentCount) currentCount.textContent = chars;
+  if (wordCount) wordCount.textContent = `(${words} word${words !== 1 ? "s" : ""})`;
+
+  // Update styling based on count
+  const submitButton = document.getElementById("submit-story");
+  
+  if (chars > maxChars) {
+    if (currentCount) currentCount.className = "danger";
+    if (charWarning) charWarning.classList.remove("hidden");
+    if (submitButton) submitButton.disabled = true;
+  } else if (chars > warningThreshold) {
+    if (currentCount) currentCount.className = "warning";
+    if (charWarning) charWarning.classList.add("hidden");
+    if (submitButton) submitButton.disabled = false;
+  } else if (chars > 0) {
+    if (currentCount) currentCount.className = "success";
+    if (charWarning) charWarning.classList.add("hidden");
+    if (submitButton) submitButton.disabled = false;
+  } else {
+    if (currentCount) currentCount.className = "";
+    if (charWarning) charWarning.classList.add("hidden");
+    if (submitButton) submitButton.disabled = false;
+  }
+}
+
+// Initialize enhanced features
+document.addEventListener("DOMContentLoaded", async () => {
+  // Wait for notification system
+  await new Promise(resolve => {
+    if (window.NotificationSystem) {
+      resolve();
+    } else {
+      const checkSystem = setInterval(() => {
+        if (window.NotificationSystem) {
+          clearInterval(checkSystem);
+          resolve();
+        }
+      }, 100);
+    }
   });
 
-  if (!title) {
-    showNotification("Please enter a story title.", "error");
-    return false;
+  // Set up character counting
+  if (storyContent) {
+    storyContent.addEventListener("input", updateCharacterCount);
+    updateCharacterCount(); // Initial count
   }
 
-  if (!content) {
-    showNotification("Please write your story.", "error");
-    return false;
+  // Set up save draft button
+  const saveDraftBtn = document.getElementById("save-draft");
+  if (saveDraftBtn) {
+    saveDraftBtn.addEventListener("click", async (e) => {
+      e.preventDefault();
+      await saveDraftEnhanced();
+    });
   }
 
-  if (content.length < 100) {
-    showNotification(
-      "Your story must be at least 100 characters long.",
-      "error"
-    );
-    return false;
+  // Load story for edit if in edit mode
+  if (editMode) {
+    await loadStoryForEdit();
+  } else {
+    // Try to load draft from database or localStorage
+    await loadExistingDraft();
   }
 
-  if (content.length > MAX_CHARS) {
-    showNotification(
-      `Your story exceeds the ${MAX_CHARS} character limit.`,
-      "error"
-    );
-    return false;
+  // Enhanced file upload handling
+  if (fileInput && fileName) {
+    fileInput.addEventListener("change", () => {
+      if (fileInput.files.length > 0) {
+        const file = fileInput.files[0];
+
+        // Use input sanitizer for validation
+        const validation = window.InputSanitizer?.validateFileUpload(file);
+
+        if (validation && !validation.isValid) {
+          window.showError?.("File validation failed: " + validation.errors.join(", "), {
+            title: "Invalid File"
+          });
+          fileInput.value = "";
+          fileName.textContent = "No file chosen";
+          return;
+        }
+
+        fileName.textContent = file.name;
+        window.showSuccess?.(`Image "${file.name}" selected successfully`);
+      } else {
+        fileName.textContent = "No file chosen";
+      }
+    });
   }
+});
 
-  if (!authorName) {
-    showNotification("Please enter your name.", "error");
-    return false;
-  }
-
-  if (!category) {
-    showNotification("Please select a category for your story.", "error");
-    return false;
-  }
-
-  // Check consent checkbox
-  const consentCheckbox = document.getElementById("consent");
-  if (consentCheckbox && !consentCheckbox.checked) {
-    showNotification("Please consent to having your story published.", "error");
-    return false;
-  }
-
-  console.log("✅ Form validation passed");
-  return true;
-}
-
-function setButtonLoading(button, text) {
-  if (!button) return;
-  button.disabled = true;
-  button.dataset.originalText = button.innerHTML;
-  button.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${text}`;
-}
-
-function resetButtonState(button, text) {
-  if (!button) return;
-  button.disabled = false;
-  button.innerHTML = button.dataset.originalText || text;
-}
-
-function highlightElement(element, duration = 2000) {
-  if (!element) return;
-
-  element.style.backgroundColor = "#e8f5e8";
-  element.style.transition = "background-color 0.3s ease";
-
-  setTimeout(() => {
-    element.style.backgroundColor = "";
-  }, duration);
-}
-
-function showSuccessState(story) {
-  console.log("🎉 Showing success state for story:", story);
-
-  if (storyForm) storyForm.style.display = "none";
-  if (submissionSuccess) submissionSuccess.classList.remove("hidden");
-
-  // Show AI insights if available
-  if (story?.sentiment_data) {
-    showSubmissionInsights(story);
-  }
-
-  // Scroll to success message
-  if (submissionSuccess) {
-    submissionSuccess.scrollIntoView({ behavior: "smooth" });
-  }
-}
-
-function resetForm() {
-  if (storyForm) {
-    storyForm.reset();
-    storyForm.style.display = "block";
-    updateCharacterCount();
-  }
-
-  if (submissionSuccess) {
-    submissionSuccess.classList.add("hidden");
-  }
-
-  if (fileName) {
-    fileName.textContent = "";
-    fileName.style.display = "none";
-  }
-}
-
-function clearLocalDraft() {
-  try {
-    localStorage.removeItem(DRAFT_KEY);
-  } catch (error) {
-    console.error("Error clearing local draft:", error);
-  }
-}
-
-function displayAISuggestions(suggestions) {
-  if (!aiSuggestionsPanel) {
-    // Create panel if it doesn't exist
-    const panel = document.createElement("div");
-    panel.id = "ai-suggestions-panel";
-    panel.className = "ai-suggestions-panel";
-    storyForm?.appendChild(panel);
-  }
-
-  const panel = document.getElementById("ai-suggestions-panel");
-  if (!panel) return;
-
-  panel.innerHTML = `
-        <div class="suggestions-header">
-            <h4><i class="fas fa-lightbulb"></i> AI Writing Suggestions</h4>
-            <button type="button" class="close-suggestions" onclick="this.closest('.ai-suggestions-panel').style.display='none'">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-        <div class="suggestions-content">
-            ${suggestions
-              .split("\n")
-              .map((suggestion) =>
-                suggestion.trim()
-                  ? `<p><i class="fas fa-arrow-right"></i> ${suggestion.trim()}</p>`
-                  : ""
-              )
-              .join("")}
-        </div>
-    `;
-  panel.style.display = "block";
-}
-
-function showSubmissionInsights(story) {
-  if (!submissionSuccess || !story) return;
-
-  const insights = document.createElement("div");
-  insights.className = "submission-insights";
-  insights.innerHTML = `
-        <h4><i class="fas fa-chart-line"></i> Story Insights</h4>
-        <div class="insights-content">
-            <p>Your story has been analyzed:</p>
-            <ul>
-                <li><strong>Category:</strong> ${
-                  story.category?.replace("-", " ") || "Not specified"
-                }</li>
-                <li><strong>Reading time:</strong> ~${Math.ceil(
-                  (story.content?.length || 0) / 250
-                )} minutes</li>
-                ${
-                  story.sentiment_data
-                    ? `<li><strong>Emotional tone:</strong> ${story.sentiment_data.label}</li>`
-                    : ""
-                }
-                <li><strong>Status:</strong> Pending review</li>
-            </ul>
-            <p><small>These insights help us understand the impact of your story and will help other readers discover it.</small></p>
-        </div>
-    `;
-
-  submissionSuccess.appendChild(insights);
-}
-
-function showNotification(message, type = "info", duration = 5000) {
-  // Remove existing notifications
-  const existingNotifications = document.querySelectorAll(".notification");
-  existingNotifications.forEach((notification) => notification.remove());
-
-  // Create new notification
-  const notification = document.createElement("div");
-  notification.className = `notification notification-${type}`;
-  notification.innerHTML = `
-        <div class="notification-content">
-            <span class="notification-message">${message}</span>
-            <button class="notification-close" onclick="this.closest('.notification').remove()">×</button>
-        </div>
-    `;
-
-  // Add styles if not already present
-  if (!document.querySelector("#notification-styles")) {
-    const styles = document.createElement("style");
-    styles.id = "notification-styles";
-    styles.textContent = `
-            .notification {
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                padding: 12px 16px;
-                border-radius: 8px;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-                z-index: 10000;
-                max-width: 400px;
-                animation: slideIn 0.3s ease;
-            }
-            .notification-info { background: #3498db; color: white; }
-            .notification-success { background: #2ecc71; color: white; }
-            .notification-warning { background: #f39c12; color: white; }
-            .notification-error { background: #e74c3c; color: white; }
-            .notification-content { display: flex; justify-content: space-between; align-items: center; }
-            .notification-close { background: none; border: none; color: inherit; cursor: pointer; padding: 0; margin-left: 10px; }
-            @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
-        `;
-    document.head.appendChild(styles);
-  }
-
-  // Add to page
-  document.body.appendChild(notification);
-
-  // Add extra visibility for success messages
-  if (type === "success") {
-    notification.style.fontSize = "16px";
-    notification.style.padding = "16px 20px";
-    notification.style.fontWeight = "bold";
-  }
-
-  // Auto-remove after specified duration
-  setTimeout(() => {
-    if (notification.parentElement) {
-      notification.style.animation = "slideIn 0.3s ease reverse";
-      setTimeout(() => notification.remove(), 300);
+async function loadExistingDraft() {
+  let draftLoaded = false;
+  
+  if (window.UmojaDB) {
+    try {
+      const result = await window.UmojaDB.getAllDrafts();
+      if (result.success && result.drafts.length > 0) {
+        // Load the most recent draft
+        const latestDraft = result.drafts[0];
+        populateFormWithStory(latestDraft);
+        
+        window.showInfo?.("Your latest draft has been loaded", {
+          title: "Draft Loaded",
+          duration: 4000
+        });
+        draftLoaded = true;
+      }
+    } catch (error) {
+      console.error("Error loading drafts:", error);
     }
-  }, duration);
+  }
+
+  // Fallback to localStorage if no database draft found
+  if (!draftLoaded) {
+    const savedDraft = localStorage.getItem("story_draft");
+    if (savedDraft) {
+      try {
+        const draftData = JSON.parse(savedDraft);
+        populateFormWithStory(draftData);
+        
+        window.showInfo?.("A saved draft has been loaded from local storage", {
+          title: "Local Draft Loaded",
+          duration: 4000
+        });
+      } catch (error) {
+        console.error("Error parsing local draft:", error);
+        localStorage.removeItem("story_draft");
+      }
+    }
+  }
 }
 
-// Export functions for global access
+// Export enhanced functions
 window.UmojaSubmit = {
-  handleSubmission,
-  handleAISuggestions,
-  handleAutoCategorization,
-  showNotification,
-  validateForm,
+  ...window.UmojaSubmit,
+  saveDraftEnhanced,
+  loadStoryForEdit,
+  populateFormWithStory,
+  updateCharacterCount,
+  editMode,
+  editStory
 };

@@ -196,6 +196,7 @@
 
     <!-- Include scripts -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="js/notification-system.js"></script>
     <script src="js/global-error-handler.js"></script>
     <script src="js/input-sanitizer.js"></script>
     <script src="js/supabase-config.js"></script>
@@ -381,16 +382,24 @@
 
           if (error) throw error;
 
-          alert("✅ Story approved successfully!");
+          window.showSuccess?.("✅ Story approved successfully!");
           await loadStories();
         } catch (error) {
           console.error("Approve error:", error);
-          alert(`❌ Error approving story: ${error.message}`);
+          window.showError?.(`❌ Error approving story: ${error.message}`);
         }
       }
 
       async function rejectStory(storyId) {
-        const reason = prompt("Enter rejection reason (optional):");
+        const reason = await window.showPromptDialog(
+          "Reject Story",
+          "Enter rejection reason (optional):",
+          "",
+          "Optional reason for rejection..."
+        );
+
+        // If user cancelled, don't proceed with rejection
+        if (reason === null) return;
 
         try {
           const { data, error } = await window.UmojaDB.supabase
@@ -403,17 +412,23 @@
 
           if (error) throw error;
 
-          alert("❌ Story rejected.");
+          window.showWarning?.("❌ Story rejected.");
           await loadStories();
         } catch (error) {
           console.error("Reject error:", error);
-          alert(`❌ Error rejecting story: ${error.message}`);
+          window.showError?.(`❌ Error rejecting story: ${error.message}`);
         }
       }
 
       async function approveAllPending() {
-        if (!confirm("Are you sure you want to approve ALL pending stories?"))
-          return;
+        const confirmApprove = await window.showConfirmationDialog(
+          "Approve All Stories",
+          "Are you sure you want to approve ALL pending stories?",
+          "Approve All",
+          "Cancel"
+        );
+        
+        if (!confirmApprove) return;
 
         try {
           const { data, error } = await window.UmojaDB.supabase
@@ -426,11 +441,11 @@
 
           if (error) throw error;
 
-          alert("✅ All pending stories approved!");
+          window.showSuccess?.("✅ All pending stories approved!");
           await loadStories();
         } catch (error) {
           console.error("Approve all error:", error);
-          alert(`❌ Error approving stories: ${error.message}`);
+          window.showError?.(`❌ Error approving stories: ${error.message}`);
         }
       }
 
@@ -453,7 +468,51 @@ Content:
 ${story.content}
             `;
 
-        alert(details);
+        // Create a modal for story details instead of alert
+        const modal = document.createElement('div');
+        modal.style.cssText = `
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: rgba(0, 0, 0, 0.8);
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          z-index: 10000;
+        `;
+        
+        const content = document.createElement('div');
+        content.style.cssText = `
+          background: white;
+          border-radius: 12px;
+          padding: 24px;
+          max-width: 600px;
+          max-height: 80vh;
+          width: 90%;
+          overflow-y: auto;
+          position: relative;
+        `;
+        
+        content.innerHTML = `
+          <button onclick="this.closest('.modal').remove()" style="
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #666;
+          ">&times;</button>
+          <pre style="white-space: pre-wrap; font-family: monospace; margin: 0;">${details}</pre>
+        `;
+        
+        modal.className = 'modal';
+        modal.appendChild(content);
+        modal.onclick = (e) => e.target === modal && modal.remove();
+        document.body.appendChild(modal);
       }
 
       function escapeHtml(text) {

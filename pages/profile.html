@@ -200,19 +200,37 @@
         transition: all var(--transition-fast);
       }
 
-      .edit-btn {
-        background-color: var(--primary-color);
+      .action-btn.edit-btn {
+        background-color: var(--info);
         color: white;
       }
 
-      .delete-btn {
+      .action-btn.edit-btn:hover {
+        background-color: #2563eb;
+      }
+
+      .action-btn.delete-btn {
         background-color: var(--danger);
         color: white;
       }
 
-      .view-btn {
-        background-color: var(--secondary-color);
+      .action-btn.delete-btn:hover {
+        background-color: #dc2626;
+      }
+
+      .action-btn.view-btn {
+        background-color: var(--success);
         color: white;
+      }
+
+      .action-btn.view-btn:hover {
+        background-color: #059669;
+      }
+
+      .draft-indicator {
+        color: var(--warning);
+        font-weight: 600;
+        font-size: var(--font-size-sm);
       }
 
       .empty-state {
@@ -419,6 +437,7 @@
 
     <!-- Scripts -->
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="../js/notification-system.js"></script>
     <script src="../js/global-error-handler.js"></script>
     <script src="../js/input-sanitizer.js"></script>
     <script src="../js/supabase-config.js"></script>

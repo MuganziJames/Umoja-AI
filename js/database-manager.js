@@ -424,40 +424,58 @@ class DatabaseManager {
   }
 
   // Draft Management
-  async saveDraft(draftData) {
+  async saveDraft(draftData, draftId = null) {
     try {
       const user = await this.getCurrentUser();
       if (!user) {
         // Save to localStorage if not authenticated
-        localStorage.setItem("story_draft", JSON.stringify(draftData));
-        return { success: true, location: "local" };
+        const localDrafts = this.getLocalDrafts();
+        const draftToSave = {
+          ...draftData,
+          id: draftId || 'local_' + Date.now(),
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+        
+        if (draftId) {
+          // Update existing local draft
+          const index = localDrafts.findIndex(d => d.id === draftId);
+          if (index !== -1) {
+            localDrafts[index] = { ...localDrafts[index], ...draftToSave };
+          } else {
+            localDrafts.push(draftToSave);
+          }
+        } else {
+          localDrafts.push(draftToSave);
+        }
+        
+        localStorage.setItem("story_drafts", JSON.stringify(localDrafts));
+        return { success: true, draft: draftToSave, location: "local" };
       }
 
       const draftRecord = {
-        ...draftData,
+        title: draftData.title || 'Untitled Draft',
+        content: draftData.content,
+        category: draftData.category || 'general',
+        is_anonymous: draftData.isAnonymous || false,
+        image_url: draftData.imageUrl || null,
         user_id: user.id,
         status: this.status.DRAFT,
         updated_at: new Date().toISOString(),
       };
 
-      // Check if draft already exists
-      const { data: existingDraft } = await this.supabase
-        .from(this.tables.STORIES)
-        .select("id")
-        .eq("user_id", user.id)
-        .eq("status", this.status.DRAFT)
-        .single();
-
       let result;
-      if (existingDraft) {
+      if (draftId) {
         // Update existing draft
         result = await this.supabase
           .from(this.tables.STORIES)
           .update(draftRecord)
-          .eq("id", existingDraft.id)
+          .eq("id", draftId)
+          .eq("user_id", user.id) // Ensure user owns the draft
           .select();
       } else {
         // Create new draft
+        draftRecord.created_at = new Date().toISOString();
         result = await this.supabase
           .from(this.tables.STORIES)
           .insert([draftRecord])
@@ -465,6 +483,10 @@ class DatabaseManager {
       }
 
       if (result.error) throw result.error;
+      
+      // Clear localStorage draft if successfully saved to database
+      localStorage.removeItem("story_draft");
+      
       return { success: true, draft: result.data[0], location: "database" };
     } catch (error) {
       console.error("Save draft error:", error);
@@ -472,30 +494,66 @@ class DatabaseManager {
     }
   }
 
-  async getDraft() {
+  getLocalDrafts() {
+    try {
+      const drafts = localStorage.getItem("story_drafts");
+      return drafts ? JSON.parse(drafts) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  async getAllDrafts() {
     try {
       const user = await this.getCurrentUser();
       if (!user) {
-        // Try to get from localStorage
-        const localDraft = localStorage.getItem("story_draft");
-        return localDraft
-          ? { success: true, draft: JSON.parse(localDraft), location: "local" }
-          : { success: false };
+        // Return local drafts if not authenticated
+        return { success: true, drafts: this.getLocalDrafts(), location: "local" };
       }
+
+      this.ensureInitialized();
 
       const { data, error } = await this.supabase
         .from(this.tables.STORIES)
         .select("*")
         .eq("user_id", user.id)
         .eq("status", this.status.DRAFT)
-        .single();
+        .order("updated_at", { ascending: false });
 
-      if (error && error.code !== "PGRST116") throw error; // PGRST116 is "not found"
-      return data
-        ? { success: true, draft: data, location: "database" }
-        : { success: false };
+      if (error) throw error;
+
+      return { success: true, drafts: data || [], location: "database" };
     } catch (error) {
-      console.error("Get draft error:", error);
+      console.error("Get drafts error:", error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  async deleteDraft(draftId) {
+    try {
+      const user = await this.getCurrentUser();
+      if (!user) {
+        // Delete from localStorage
+        const localDrafts = this.getLocalDrafts();
+        const filteredDrafts = localDrafts.filter(d => d.id !== draftId);
+        localStorage.setItem("story_drafts", JSON.stringify(filteredDrafts));
+        return { success: true, location: "local" };
+      }
+
+      this.ensureInitialized();
+
+      const { error } = await this.supabase
+        .from(this.tables.STORIES)
+        .delete()
+        .eq("id", draftId)
+        .eq("user_id", user.id)
+        .eq("status", this.status.DRAFT);
+
+      if (error) throw error;
+
+      return { success: true, location: "database" };
+    } catch (error) {
+      console.error("Delete draft error:", error);
       return { success: false, error: error.message };
     }
   }

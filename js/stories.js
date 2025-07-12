@@ -429,7 +429,8 @@ function setupStoryEventListeners() {
         }
       } catch (error) {
         console.error("Error loading story:", error);
-        alert("Error loading story. Please try again.");
+        window.showError?.("Error loading story. Please try again.") || 
+        window.showError?.("Error loading story. Please try again.");
       }
     });
   });

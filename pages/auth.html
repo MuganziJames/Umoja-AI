@@ -522,8 +522,8 @@
             const email = formData.get("email");
             console.log("📧 Attempted sign-in for:", email);
 
-            // You can add a visual indicator here
-            alert(
+            // Use notification system to inform user
+            window.showWarning?.(
               "Authentication system is still loading. Please wait a moment and try again."
             );
           });
@@ -535,13 +535,14 @@
             console.log(
               "🚫 Sign-up form submission prevented (waiting for auth manager)"
             );
-            alert(
+            window.showWarning?.(
               "Authentication system is still loading. Please wait a moment and try again."
             );
           });
         }
       });
     </script>
+    <script src="../js/notification-system.js"></script>
     <script src="../js/global-error-handler.js"></script>
     <script src="../js/input-sanitizer.js"></script>
     <script src="../js/supabase-config.js"></script>
