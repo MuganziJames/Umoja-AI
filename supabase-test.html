@@ -49,9 +49,10 @@
 
           // Try to create a client
           try {
+            // Note: This test uses placeholder values. Replace with your actual Supabase credentials
             const client = SupabaseLib.createClient(
-              "https://iiqvqveluzicnsxushgg.supabase.co",
-              "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlpcXZxdmVsdXppY25zeHVzaGdnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIxNjczMTksImV4cCI6MjA2Nzc0MzMxOX0.CcF6WLWWRHK0-TP2Rhvd2wQoqXGv9dpMTtYuAUTQl4M"
+              "YOUR_SUPABASE_URL_HERE",
+              "YOUR_SUPABASE_ANON_KEY_HERE"
             );
             console.log("✅ Supabase client created:", client);
             statusDiv.innerHTML += `<p>✅ Client creation successful!</p>`;

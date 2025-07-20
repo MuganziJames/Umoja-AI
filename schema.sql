@@ -854,55 +854,79 @@ ALTER TABLE ai_request_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE admin_settings ENABLE ROW LEVEL SECURITY;
 
 -- Categories: Public read, admin-only write
-CREATE POLICY "Full access to categories" ON categories
-  FOR ALL USING (true)
-  WITH CHECK (
-    CASE 
-      WHEN TG_OP = 'SELECT' THEN true
-      ELSE auth.uid() IS NOT NULL AND EXISTS (
-        SELECT 1 FROM user_profiles 
-        WHERE id = auth.uid() AND role IN ('admin', 'super_admin')
-      )
-    END
+CREATE POLICY "Categories select access" ON categories
+  FOR SELECT USING (true);
+
+CREATE POLICY "Categories modify access" ON categories
+  FOR INSERT WITH CHECK (
+    auth.uid() IS NOT NULL AND EXISTS (
+      SELECT 1 FROM user_profiles 
+      WHERE id = auth.uid() AND role IN ('admin', 'super_admin')
+    )
   );
 
--- Tags: Public read, authenticated users can create, own tags can be updated
-CREATE POLICY "Full access to tags" ON tags
-  FOR ALL USING (true)
-  WITH CHECK (
-    CASE 
-      WHEN TG_OP = 'SELECT' THEN true
-      ELSE auth.uid() IS NOT NULL
-    END
+CREATE POLICY "Categories update access" ON categories
+  FOR UPDATE USING (
+    auth.uid() IS NOT NULL AND EXISTS (
+      SELECT 1 FROM user_profiles 
+      WHERE id = auth.uid() AND role IN ('admin', 'super_admin')
+    )
   );
+
+CREATE POLICY "Categories delete access" ON categories
+  FOR DELETE USING (
+    auth.uid() IS NOT NULL AND EXISTS (
+      SELECT 1 FROM user_profiles 
+      WHERE id = auth.uid() AND role IN ('admin', 'super_admin')
+    )
+  );
+
+-- Tags: Public read, authenticated users can create
+CREATE POLICY "Tags select access" ON tags
+  FOR SELECT USING (true);
+
+CREATE POLICY "Tags insert access" ON tags
+  FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
+
+CREATE POLICY "Tags update access" ON tags
+  FOR UPDATE USING (auth.uid() IS NOT NULL);
+
+CREATE POLICY "Tags delete access" ON tags
+  FOR DELETE USING (auth.uid() IS NOT NULL);
 
 -- User Profiles: Users can see all profiles, but only manage their own
-CREATE POLICY "Full access to user profiles" ON user_profiles
-  FOR ALL USING (
-    CASE 
-      WHEN TG_OP = 'SELECT' THEN true
-      ELSE id = auth.uid()
-    END
-  )
-  WITH CHECK (id = auth.uid());
+CREATE POLICY "User profiles select access" ON user_profiles
+  FOR SELECT USING (true);
+
+CREATE POLICY "User profiles insert access" ON user_profiles
+  FOR INSERT WITH CHECK (id = auth.uid());
+
+CREATE POLICY "User profiles update access" ON user_profiles
+  FOR UPDATE USING (id = auth.uid());
+
+CREATE POLICY "User profiles delete access" ON user_profiles
+  FOR DELETE USING (id = auth.uid());
 
 -- Stories: Public read for approved, users manage their own
-CREATE POLICY "Full access to stories" ON stories
-  FOR ALL USING (
-    CASE 
-      WHEN TG_OP = 'SELECT' THEN status = 'approved' OR user_id = auth.uid()
-      ELSE user_id = auth.uid()
-    END
-  )
-  WITH CHECK (user_id = auth.uid());
+CREATE POLICY "Stories select access" ON stories
+  FOR SELECT USING (status = 'approved' OR user_id = auth.uid());
+
+CREATE POLICY "Stories insert access" ON stories
+  FOR INSERT WITH CHECK (user_id = auth.uid());
+
+CREATE POLICY "Stories update access" ON stories
+  FOR UPDATE USING (user_id = auth.uid());
+
+CREATE POLICY "Stories delete access" ON stories
+  FOR DELETE USING (user_id = auth.uid());
 
 -- Story Drafts: Users can only access their own drafts
-CREATE POLICY "Full access to story drafts" ON story_drafts
+CREATE POLICY "Story drafts access" ON story_drafts
   FOR ALL USING (user_id = auth.uid())
   WITH CHECK (user_id = auth.uid());
 
 -- Story Revisions: Users can see revisions of their own stories
-CREATE POLICY "Full access to story revisions" ON story_revisions
+CREATE POLICY "Story revisions access" ON story_revisions
   FOR ALL USING (
     EXISTS (SELECT 1 FROM stories WHERE id = story_id AND user_id = auth.uid())
   )
@@ -911,7 +935,7 @@ CREATE POLICY "Full access to story revisions" ON story_revisions
   );
 
 -- Story Collaborators: Users can manage collaborations on their own stories
-CREATE POLICY "Full access to story collaborators" ON story_collaborators
+CREATE POLICY "Story collaborators access" ON story_collaborators
   FOR ALL USING (
     user_id = auth.uid() OR 
     EXISTS (SELECT 1 FROM stories WHERE id = story_id AND user_id = auth.uid())
@@ -922,130 +946,184 @@ CREATE POLICY "Full access to story collaborators" ON story_collaborators
   );
 
 -- Story Tags: Public read, story owners can manage tags on their stories
-CREATE POLICY "Full access to story tags" ON story_tags
-  FOR ALL USING (
-    CASE 
-      WHEN TG_OP = 'SELECT' THEN true
-      ELSE EXISTS (SELECT 1 FROM stories WHERE id = story_id AND user_id = auth.uid())
-    END
-  )
-  WITH CHECK (
+CREATE POLICY "Story tags select access" ON story_tags
+  FOR SELECT USING (true);
+
+CREATE POLICY "Story tags modify access" ON story_tags
+  FOR INSERT WITH CHECK (
+    EXISTS (SELECT 1 FROM stories WHERE id = story_id AND user_id = auth.uid())
+  );
+
+CREATE POLICY "Story tags update access" ON story_tags
+  FOR UPDATE USING (
+    EXISTS (SELECT 1 FROM stories WHERE id = story_id AND user_id = auth.uid())
+  );
+
+CREATE POLICY "Story tags delete access" ON story_tags
+  FOR DELETE USING (
     EXISTS (SELECT 1 FROM stories WHERE id = story_id AND user_id = auth.uid())
   );
 
 -- Story Analytics: Public read for approved stories, story owners can see all
-CREATE POLICY "Full access to story analytics" ON story_analytics
-  FOR ALL USING (
-    CASE 
-      WHEN TG_OP = 'SELECT' THEN 
-        EXISTS (SELECT 1 FROM stories WHERE id = story_id AND (status = 'approved' OR user_id = auth.uid()))
-      ELSE EXISTS (SELECT 1 FROM stories WHERE id = story_id AND user_id = auth.uid())
-    END
-  )
-  WITH CHECK (
+CREATE POLICY "Story analytics select access" ON story_analytics
+  FOR SELECT USING (
+    EXISTS (SELECT 1 FROM stories WHERE id = story_id AND (status = 'approved' OR user_id = auth.uid()))
+  );
+
+CREATE POLICY "Story analytics insert access" ON story_analytics
+  FOR INSERT WITH CHECK (true);
+
+CREATE POLICY "Story analytics update access" ON story_analytics
+  FOR UPDATE USING (
+    EXISTS (SELECT 1 FROM stories WHERE id = story_id AND user_id = auth.uid())
+  );
+
+CREATE POLICY "Story analytics delete access" ON story_analytics
+  FOR DELETE USING (
     EXISTS (SELECT 1 FROM stories WHERE id = story_id AND user_id = auth.uid())
   );
 
 -- Comments: Public read on approved stories, users manage their own comments
-CREATE POLICY "Full access to comments" ON comments
-  FOR ALL USING (
-    CASE 
-      WHEN TG_OP = 'SELECT' THEN 
-        EXISTS (SELECT 1 FROM stories WHERE id = story_id AND status = 'approved')
-      ELSE user_id = auth.uid()
-    END
-  )
-  WITH CHECK (user_id = auth.uid());
+CREATE POLICY "Comments select access" ON comments
+  FOR SELECT USING (
+    EXISTS (SELECT 1 FROM stories WHERE id = story_id AND status = 'approved')
+  );
+
+CREATE POLICY "Comments insert access" ON comments
+  FOR INSERT WITH CHECK (user_id = auth.uid());
+
+CREATE POLICY "Comments update access" ON comments
+  FOR UPDATE USING (user_id = auth.uid());
+
+CREATE POLICY "Comments delete access" ON comments
+  FOR DELETE USING (user_id = auth.uid());
 
 -- Comment Likes: Users can like comments on approved stories
-CREATE POLICY "Full access to comment likes" ON comment_likes
-  FOR ALL USING (
-    CASE 
-      WHEN TG_OP = 'SELECT' THEN 
-        EXISTS (
-          SELECT 1 FROM comments c 
-          JOIN stories s ON c.story_id = s.id 
-          WHERE c.id = comment_id AND s.status = 'approved'
-        )
-      ELSE user_id = auth.uid()
-    END
-  )
-  WITH CHECK (user_id = auth.uid());
+CREATE POLICY "Comment likes select access" ON comment_likes
+  FOR SELECT USING (
+    EXISTS (
+      SELECT 1 FROM comments c 
+      JOIN stories s ON c.story_id = s.id 
+      WHERE c.id = comment_id AND s.status = 'approved'
+    )
+  );
+
+CREATE POLICY "Comment likes modify access" ON comment_likes
+  FOR INSERT WITH CHECK (user_id = auth.uid());
+
+CREATE POLICY "Comment likes update access" ON comment_likes
+  FOR UPDATE USING (user_id = auth.uid());
+
+CREATE POLICY "Comment likes delete access" ON comment_likes
+  FOR DELETE USING (user_id = auth.uid());
 
 -- Likes: Users can like approved stories
-CREATE POLICY "Full access to likes" ON likes
-  FOR ALL USING (
-    CASE 
-      WHEN TG_OP = 'SELECT' THEN 
-        EXISTS (SELECT 1 FROM stories WHERE id = story_id AND status = 'approved')
-      ELSE user_id = auth.uid()
-    END
-  )
-  WITH CHECK (user_id = auth.uid());
+CREATE POLICY "Likes select access" ON likes
+  FOR SELECT USING (
+    EXISTS (SELECT 1 FROM stories WHERE id = story_id AND status = 'approved')
+  );
+
+CREATE POLICY "Likes modify access" ON likes
+  FOR INSERT WITH CHECK (user_id = auth.uid());
+
+CREATE POLICY "Likes update access" ON likes
+  FOR UPDATE USING (user_id = auth.uid());
+
+CREATE POLICY "Likes delete access" ON likes
+  FOR DELETE USING (user_id = auth.uid());
 
 -- Bookmarks: Users manage their own bookmarks
-CREATE POLICY "Full access to bookmarks" ON bookmarks
+CREATE POLICY "Bookmarks access" ON bookmarks
   FOR ALL USING (user_id = auth.uid())
   WITH CHECK (user_id = auth.uid());
 
 -- User Follows: Users manage their own follows
-CREATE POLICY "Full access to user follows" ON user_follows
-  FOR ALL USING (
+CREATE POLICY "User follows select access" ON user_follows
+  FOR SELECT USING (
     follower_id = auth.uid() OR following_id = auth.uid()
-  )
-  WITH CHECK (follower_id = auth.uid());
+  );
+
+CREATE POLICY "User follows insert access" ON user_follows
+  FOR INSERT WITH CHECK (follower_id = auth.uid());
+
+CREATE POLICY "User follows update access" ON user_follows
+  FOR UPDATE USING (follower_id = auth.uid());
+
+CREATE POLICY "User follows delete access" ON user_follows
+  FOR DELETE USING (follower_id = auth.uid());
 
 -- User Notifications: Users see only their own notifications
-CREATE POLICY "Full access to user notifications" ON user_notifications
+CREATE POLICY "User notifications access" ON user_notifications
   FOR ALL USING (user_id = auth.uid())
   WITH CHECK (user_id = auth.uid());
 
 -- Story Reports: Users can report stories, admins can manage reports
-CREATE POLICY "Full access to story reports" ON story_reports
-  FOR ALL USING (
-    CASE 
-      WHEN TG_OP = 'SELECT' THEN 
-        reporter_id = auth.uid() OR 
-        EXISTS (SELECT 1 FROM user_profiles WHERE id = auth.uid() AND role IN ('admin', 'super_admin'))
-      ELSE reporter_id = auth.uid()
-    END
-  )
-  WITH CHECK (reporter_id = auth.uid());
+CREATE POLICY "Story reports select access" ON story_reports
+  FOR SELECT USING (
+    reporter_id = auth.uid() OR 
+    EXISTS (SELECT 1 FROM user_profiles WHERE id = auth.uid() AND role IN ('admin', 'super_admin'))
+  );
+
+CREATE POLICY "Story reports insert access" ON story_reports
+  FOR INSERT WITH CHECK (reporter_id = auth.uid());
+
+CREATE POLICY "Story reports update access" ON story_reports
+  FOR UPDATE USING (
+    EXISTS (SELECT 1 FROM user_profiles WHERE id = auth.uid() AND role IN ('admin', 'super_admin'))
+  );
+
+CREATE POLICY "Story reports delete access" ON story_reports
+  FOR DELETE USING (
+    EXISTS (SELECT 1 FROM user_profiles WHERE id = auth.uid() AND role IN ('admin', 'super_admin'))
+  );
 
 -- Newsletter Subscriptions: Public can subscribe, users manage their own
-CREATE POLICY "Full access to newsletter subscriptions" ON newsletter_subscriptions
+CREATE POLICY "Newsletter subscriptions access" ON newsletter_subscriptions
   FOR ALL USING (true)
   WITH CHECK (true);
 
 -- Contact Submissions: Anyone can submit, admins can view
-CREATE POLICY "Full access to contact submissions" ON contact_submissions
-  FOR ALL USING (
-    CASE 
-      WHEN TG_OP IN ('INSERT', 'SELECT') THEN true
-      ELSE EXISTS (SELECT 1 FROM user_profiles WHERE id = auth.uid() AND role IN ('admin', 'super_admin'))
-    END
-  )
-  WITH CHECK (true);
+CREATE POLICY "Contact submissions select access" ON contact_submissions
+  FOR SELECT USING (
+    EXISTS (SELECT 1 FROM user_profiles WHERE id = auth.uid() AND role IN ('admin', 'super_admin'))
+  );
+
+CREATE POLICY "Contact submissions insert access" ON contact_submissions
+  FOR INSERT WITH CHECK (true);
+
+CREATE POLICY "Contact submissions update access" ON contact_submissions
+  FOR UPDATE USING (
+    EXISTS (SELECT 1 FROM user_profiles WHERE id = auth.uid() AND role IN ('admin', 'super_admin'))
+  );
+
+CREATE POLICY "Contact submissions delete access" ON contact_submissions
+  FOR DELETE USING (
+    EXISTS (SELECT 1 FROM user_profiles WHERE id = auth.uid() AND role IN ('admin', 'super_admin'))
+  );
 
 -- User Sessions: Users manage their own sessions
-CREATE POLICY "Full access to user sessions" ON user_sessions
+CREATE POLICY "User sessions access" ON user_sessions
   FOR ALL USING (user_id = auth.uid())
   WITH CHECK (user_id = auth.uid());
 
 -- AI Request Logs: Users can see their own requests, admins can see all
-CREATE POLICY "Full access to ai request logs" ON ai_request_logs
-  FOR ALL USING (
-    CASE 
-      WHEN TG_OP = 'SELECT' THEN 
-        user_id = auth.uid() OR 
-        EXISTS (SELECT 1 FROM user_profiles WHERE id = auth.uid() AND role IN ('admin', 'super_admin'))
-      ELSE user_id = auth.uid()
-    END
-  )
-  WITH CHECK (user_id = auth.uid());
+CREATE POLICY "AI request logs select access" ON ai_request_logs
+  FOR SELECT USING (
+    user_id = auth.uid() OR 
+    EXISTS (SELECT 1 FROM user_profiles WHERE id = auth.uid() AND role IN ('admin', 'super_admin'))
+  );
+
+CREATE POLICY "AI request logs insert access" ON ai_request_logs
+  FOR INSERT WITH CHECK (user_id = auth.uid());
+
+CREATE POLICY "AI request logs update access" ON ai_request_logs
+  FOR UPDATE USING (user_id = auth.uid());
+
+CREATE POLICY "AI request logs delete access" ON ai_request_logs
+  FOR DELETE USING (user_id = auth.uid());
 
 -- Admin Settings: Admin-only access
-CREATE POLICY "Full access to admin settings" ON admin_settings
+CREATE POLICY "Admin settings access" ON admin_settings
   FOR ALL USING (
     EXISTS (SELECT 1 FROM user_profiles WHERE id = auth.uid() AND role IN ('admin', 'super_admin'))
   )
