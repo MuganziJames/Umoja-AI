@@ -3,36 +3,33 @@
 
 class AIServices {
   constructor() {
-    // Get API key from environment variables (injected by Vite)
-    this.OPENROUTER_API_KEY =
-      typeof __VITE_OPENROUTER_API_KEY__ !== "undefined"
-        ? __VITE_OPENROUTER_API_KEY__
-        : null;
+    // Get API key from configuration
+    this.OPENROUTER_API_KEY = window.CONFIG
+      ? window.CONFIG.OPENROUTER_API_KEY
+      : null;
 
-    this.PRIMARY_MODEL = "deepseek/deepseek-r1-0528-qwen3-8b"; // DeepSeek R1 0528 Qwen3 8B (free)
-    this.BACKUP_MODEL = "meta-llama/llama-4-maverick:free"; // Meta Llama 4 Maverick (free)
+    this.PRIMARY_MODEL = "deepseek/deepseek-r1-0528-qwen3-8b";
+    this.BACKUP_MODEL = "meta-llama/llama-4-maverick:free";
     this.BASE_URL = "https://openrouter.ai/api/v1";
 
-    // Enable AI only if API key is properly configured
     this.AI_ENABLED =
       !!this.OPENROUTER_API_KEY &&
       this.OPENROUTER_API_KEY !== "your_openrouter_api_key_here";
 
     if (this.AI_ENABLED) {
-      console.log("✅ AI Services initialized with OpenRouter API");
+      console.log("AI Services initialized with OpenRouter API");
     } else {
       console.log(
-        "⚠️ AI Services initialized - AI features disabled (no API key)"
+        "AI Services initialized - AI features disabled (no API key)"
       );
     }
   }
 
   // Make OpenRouter API call with fallback model and rate limiting
   async makeOpenRouterCall(messages, options = {}) {
-    // AI features disabled for security - return safe fallback
     if (!this.AI_ENABLED || !this.OPENROUTER_API_KEY) {
-      console.warn("🔒 AI features disabled for security");
-      throw new Error("AI features temporarily disabled for security reasons");
+      console.warn("AI features disabled");
+      throw new Error("AI features disabled");
     }
 
     const {

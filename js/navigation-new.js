@@ -59,15 +59,12 @@ class NavigationManager {
   }
 }
 
-// Initialize navigation manager (but it's now deprecated)
 let navManager;
 
 document.addEventListener("DOMContentLoaded", async () => {
   navManager = new NavigationManager();
   await navManager.initialize();
 });
-
-// Keep mobile navigation functionality
 document.addEventListener("DOMContentLoaded", function () {
   const mobileToggle = document.querySelector(".mobile-nav-toggle");
   const nav = document.querySelector("nav");

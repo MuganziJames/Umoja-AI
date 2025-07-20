@@ -260,13 +260,8 @@ class AuthGuard {
   }
 
   async logout() {
-    // Use modern confirmation dialog instead of browser confirm
-    const confirmLogout = await window.showConfirmationDialog(
-      "Logout Confirmation",
-      "Are you sure you want to logout?",
-      "Logout",
-      "Cancel"
-    );
+    // Simple confirmation dialog since showConfirmationDialog might not be available
+    const confirmLogout = confirm("Are you sure you want to logout?");
 
     if (!confirmLogout) {
       return; // User cancelled
