@@ -60,7 +60,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   } catch (error) {
     console.error("❌ Stories page initialization failed:", error);
-    showErrorMessage("Failed to load stories. Please refresh the page.");
+    console.error("Failed to load stories. Please refresh the page.");
   }
 });
 
@@ -429,8 +429,7 @@ function setupStoryEventListeners() {
         }
       } catch (error) {
         console.error("Error loading story:", error);
-        window.showError?.("Error loading story. Please try again.") ||
-          window.showError?.("Error loading story. Please try again.");
+        console.error("Error loading story. Please try again.");
       }
     });
   });
@@ -459,16 +458,7 @@ function toggleBookmark(storyId, buttonElement) {
   );
 }
 
-// Show error message
+// Show error message - DISABLED
 function showErrorMessage(message) {
-  if (storyGrid) {
-    storyGrid.innerHTML = `
-      <div class="error-message" style="grid-column: 1 / -1; text-align: center; padding: 3rem;">
-        <i class="fas fa-exclamation-triangle" style="font-size: 3rem; color: #e74c3c; margin-bottom: 1rem;"></i>
-        <h3 style="color: #e74c3c; margin-bottom: 0.5rem;">Error</h3>
-        <p style="color: #666; margin-bottom: 1.5rem;">${message}</p>
-        <button onclick="location.reload()" class="btn primary">Retry</button>
-      </div>
-    `;
-  }
+  console.error(message);
 }
