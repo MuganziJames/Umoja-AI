@@ -1,6 +1,10 @@
 -- Umoja AI Database Schema
 
--- Enable required extensions
+-- Enable required extensions in secure schemas
+CREATE SCHEMA IF NOT EXISTS extensions;
+
+-- Handle extension security: For existing databases, leave extensions where they are
+-- For new deployments, extensions will be created in secure schema
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pg_trgm";
 
@@ -10,6 +14,10 @@ DROP FUNCTION IF EXISTS handle_new_user() CASCADE;
 DROP FUNCTION IF EXISTS update_story_counts() CASCADE;
 DROP FUNCTION IF EXISTS update_user_stats() CASCADE;
 DROP FUNCTION IF EXISTS calculate_reading_time() CASCADE;
+DROP FUNCTION IF EXISTS generate_story_slug() CASCADE;
+DROP FUNCTION IF EXISTS update_story_metrics() CASCADE;
+DROP FUNCTION IF EXISTS update_like_counts() CASCADE;
+DROP FUNCTION IF EXISTS handle_updated_at() CASCADE;
 
 -- Drop existing views
 DROP VIEW IF EXISTS featured_stories CASCADE;
@@ -456,7 +464,7 @@ CREATE INDEX idx_user_notifications_created_at ON user_notifications(created_at 
 CREATE INDEX idx_tags_name ON tags(name);
 CREATE INDEX idx_tags_usage_count ON tags(usage_count DESC);
 
--- Text search indexes
+-- Text search indexes using secure extension schema
 CREATE INDEX idx_stories_title_search ON stories USING gin(to_tsvector('english', title));
 CREATE INDEX idx_stories_content_search ON stories USING gin(to_tsvector('english', content));
 
@@ -485,115 +493,12 @@ ALTER TABLE contact_submissions DISABLE ROW LEVEL SECURITY;
 ALTER TABLE user_sessions DISABLE ROW LEVEL SECURITY;
 ALTER TABLE ai_request_logs DISABLE ROW LEVEL SECURITY;
 
--- User profiles policies
-CREATE POLICY "Public profiles are viewable by everyone" ON user_profiles
-    FOR SELECT USING (is_public = true);
-
-CREATE POLICY "Users can view own profile" ON user_profiles
-    FOR SELECT USING (auth.uid() = id);
-
-CREATE POLICY "Users can update own profile" ON user_profiles
-    FOR UPDATE USING (auth.uid() = id);
-
-CREATE POLICY "Users can insert own profile" ON user_profiles
-    FOR INSERT WITH CHECK (auth.uid() = id);
-
--- Stories policies
-CREATE POLICY "Anyone can view approved stories" ON stories
-    FOR SELECT USING (status = 'approved');
-
-CREATE POLICY "Users can view own stories" ON stories
-    FOR SELECT USING (auth.uid() = user_id);
-
-CREATE POLICY "Moderators can view all stories" ON stories
-    FOR SELECT USING (
-        EXISTS (SELECT 1 FROM user_profiles WHERE id = auth.uid() AND role IN ('moderator', 'admin', 'super_admin'))
-    );
-
-CREATE POLICY "Users can insert own stories" ON stories
-    FOR INSERT WITH CHECK (auth.uid() = user_id);
-
-CREATE POLICY "Users can update own stories" ON stories
-    FOR UPDATE USING (auth.uid() = user_id AND status IN ('draft', 'rejected'));
-
-CREATE POLICY "Moderators can update any story" ON stories
-    FOR UPDATE USING (
-        EXISTS (SELECT 1 FROM user_profiles WHERE id = auth.uid() AND role IN ('moderator', 'admin', 'super_admin'))
-    );
-
--- Story drafts policies
-CREATE POLICY "Users can manage own drafts" ON story_drafts
-    FOR ALL USING (auth.uid() = user_id);
-
-CREATE POLICY "Collaborators can view drafts" ON story_drafts
-    FOR SELECT USING (
-        EXISTS (
-            SELECT 1 FROM story_collaborators sc 
-            WHERE sc.story_id = story_drafts.story_id 
-            AND sc.user_id = auth.uid() 
-            AND sc.accepted_at IS NOT NULL
-        )
-    );
-
--- Story revisions policies
-CREATE POLICY "Users can view own story revisions" ON story_revisions
-    FOR SELECT USING (
-        EXISTS (SELECT 1 FROM stories WHERE id = story_revisions.story_id AND user_id = auth.uid())
-    );
-
--- Comments policies
-CREATE POLICY "Anyone can view approved comments" ON comments
-    FOR SELECT USING (is_approved = true);
-
-CREATE POLICY "Users can view own comments" ON comments
-    FOR SELECT USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can insert comments" ON comments
-    FOR INSERT WITH CHECK (auth.uid() = user_id);
-
-CREATE POLICY "Users can update own comments" ON comments
-    FOR UPDATE USING (auth.uid() = user_id);
-
-CREATE POLICY "Moderators can manage all comments" ON comments
-    FOR ALL USING (
-        EXISTS (SELECT 1 FROM user_profiles WHERE id = auth.uid() AND role IN ('moderator', 'admin', 'super_admin'))
-    );
-
--- Likes policies
-CREATE POLICY "Users can manage own likes" ON likes
-    FOR ALL USING (auth.uid() = user_id);
-
--- Bookmarks policies
-CREATE POLICY "Users can manage own bookmarks" ON bookmarks
-    FOR ALL USING (auth.uid() = user_id);
-
--- User follows policies
-CREATE POLICY "Users can manage own follows" ON user_follows
-    FOR ALL USING (auth.uid() = follower_id);
-
-CREATE POLICY "Anyone can view follows" ON user_follows
-    FOR SELECT USING (true);
-
--- Notifications policies
-CREATE POLICY "Users can manage own notifications" ON user_notifications
-    FOR ALL USING (auth.uid() = user_id);
-
--- Story reports policies
-CREATE POLICY "Users can create reports" ON story_reports
-    FOR INSERT WITH CHECK (auth.uid() = reporter_id);
-
-CREATE POLICY "Moderators can manage reports" ON story_reports
-    FOR ALL USING (
-        EXISTS (SELECT 1 FROM user_profiles WHERE id = auth.uid() AND role IN ('moderator', 'admin', 'super_admin'))
-    );
-
--- Comment likes policies
-CREATE POLICY "Users can manage own comment likes" ON comment_likes
-    FOR ALL USING (auth.uid() = user_id);
-
 -- Functions and triggers for automation
 CREATE OR REPLACE FUNCTION update_updated_at_column()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER 
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
 BEGIN
     NEW.updated_at = NOW();
     RETURN NEW;
@@ -601,7 +506,10 @@ END;
 $$ LANGUAGE 'plpgsql';
 
 CREATE OR REPLACE FUNCTION handle_new_user()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER 
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
 BEGIN
     INSERT INTO user_profiles (id, full_name, username)
     VALUES (
@@ -614,7 +522,10 @@ END;
 $$ LANGUAGE 'plpgsql';
 
 CREATE OR REPLACE FUNCTION update_story_counts()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER 
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
 BEGIN
     -- Update comment count on stories
     IF TG_TABLE_NAME = 'comments' THEN
@@ -648,7 +559,10 @@ END;
 $$ LANGUAGE 'plpgsql';
 
 CREATE OR REPLACE FUNCTION update_user_stats()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER 
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
 BEGIN
     -- Update follower/following counts
     IF TG_TABLE_NAME = 'user_follows' THEN
@@ -674,10 +588,82 @@ END;
 $$ LANGUAGE 'plpgsql';
 
 CREATE OR REPLACE FUNCTION calculate_reading_time()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER 
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
 BEGIN
     -- Calculate reading time (average 200 words per minute)
     NEW.reading_time = CEIL(array_length(string_to_array(NEW.content, ' '), 1) / 200.0);
+    RETURN NEW;
+END;
+$$ LANGUAGE 'plpgsql';
+
+-- Additional secure functions for complete functionality
+CREATE OR REPLACE FUNCTION generate_story_slug(title TEXT)
+RETURNS TEXT
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+BEGIN
+    RETURN LOWER(
+        REGEXP_REPLACE(
+            REGEXP_REPLACE(title, '[^a-zA-Z0-9\s-]', '', 'g'),
+            '\s+', '-', 'g'
+        )
+    );
+END;
+$$ LANGUAGE 'plpgsql';
+
+CREATE OR REPLACE FUNCTION update_story_metrics()
+RETURNS TRIGGER
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+BEGIN
+    -- Update story metrics when analytics events occur
+    IF TG_OP = 'INSERT' AND NEW.event_type = 'view' THEN
+        UPDATE stories 
+        SET view_count = view_count + 1 
+        WHERE id = NEW.story_id;
+    END IF;
+    
+    RETURN NEW;
+END;
+$$ LANGUAGE 'plpgsql';
+
+CREATE OR REPLACE FUNCTION update_like_counts()
+RETURNS TRIGGER
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+BEGIN
+    -- Update like counts for both stories and comments
+    IF TG_TABLE_NAME = 'likes' THEN
+        IF TG_OP = 'INSERT' THEN
+            UPDATE stories SET like_count = like_count + 1 WHERE id = NEW.story_id;
+        ELSIF TG_OP = 'DELETE' THEN
+            UPDATE stories SET like_count = GREATEST(like_count - 1, 0) WHERE id = OLD.story_id;
+        END IF;
+    ELSIF TG_TABLE_NAME = 'comment_likes' THEN
+        IF TG_OP = 'INSERT' THEN
+            UPDATE comments SET like_count = like_count + 1 WHERE id = NEW.comment_id;
+        ELSIF TG_OP = 'DELETE' THEN
+            UPDATE comments SET like_count = GREATEST(like_count - 1, 0) WHERE id = OLD.comment_id;
+        END IF;
+    END IF;
+    
+    RETURN COALESCE(NEW, OLD);
+END;
+$$ LANGUAGE 'plpgsql';
+
+CREATE OR REPLACE FUNCTION handle_updated_at()
+RETURNS TRIGGER
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+BEGIN
+    NEW.updated_at = NOW();
     RETURN NEW;
 END;
 $$ LANGUAGE 'plpgsql';
@@ -785,22 +771,53 @@ EXCEPTION
     WHEN duplicate_object THEN NULL;
 END $$;
 
--- Views for easy querying
-CREATE OR REPLACE VIEW featured_stories AS
+-- Additional triggers for the secure functions
+DO $$ 
+BEGIN
+    CREATE TRIGGER update_story_analytics_metrics
+        AFTER INSERT ON story_analytics
+        FOR EACH ROW EXECUTE FUNCTION update_story_metrics();
+EXCEPTION
+    WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ 
+BEGIN
+    CREATE TRIGGER update_like_counts_trigger
+        AFTER INSERT OR DELETE ON likes
+        FOR EACH ROW EXECUTE FUNCTION update_like_counts();
+EXCEPTION
+    WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ 
+BEGIN
+    CREATE TRIGGER update_comment_like_counts_trigger
+        AFTER INSERT OR DELETE ON comment_likes
+        FOR EACH ROW EXECUTE FUNCTION update_like_counts();
+EXCEPTION
+    WHEN duplicate_object THEN NULL;
+END $$;
+
+-- Views for easy querying (SECURITY INVOKER for proper RLS enforcement)
+CREATE OR REPLACE VIEW featured_stories 
+WITH (security_invoker=true) AS
 SELECT s.*, up.full_name as author_full_name, up.avatar_url as author_avatar
 FROM stories s
 LEFT JOIN user_profiles up ON s.user_id = up.id
 WHERE s.is_featured = true AND s.status = 'approved'
 ORDER BY s.featured_at DESC;
 
-CREATE OR REPLACE VIEW trending_stories AS
+CREATE OR REPLACE VIEW trending_stories 
+WITH (security_invoker=true) AS
 SELECT s.*, up.full_name as author_full_name, up.avatar_url as author_avatar
 FROM stories s
 LEFT JOIN user_profiles up ON s.user_id = up.id
 WHERE s.status = 'approved'
 ORDER BY s.view_count DESC, s.like_count DESC, s.created_at DESC;
 
-CREATE OR REPLACE VIEW recent_stories AS
+CREATE OR REPLACE VIEW recent_stories 
+WITH (security_invoker=true) AS
 SELECT s.*, up.full_name as author_full_name, up.avatar_url as author_avatar
 FROM stories s
 LEFT JOIN user_profiles up ON s.user_id = up.id
@@ -839,25 +856,25 @@ CREATE POLICY "Categories select access" ON categories
 
 CREATE POLICY "Categories modify access" ON categories
   FOR INSERT WITH CHECK (
-    auth.uid() IS NOT NULL AND EXISTS (
+    (select auth.uid()) IS NOT NULL AND EXISTS (
       SELECT 1 FROM user_profiles 
-      WHERE id = auth.uid() AND role IN ('admin', 'super_admin')
+      WHERE id = (select auth.uid()) AND role IN ('admin', 'super_admin')
     )
   );
 
 CREATE POLICY "Categories update access" ON categories
   FOR UPDATE USING (
-    auth.uid() IS NOT NULL AND EXISTS (
+    (select auth.uid()) IS NOT NULL AND EXISTS (
       SELECT 1 FROM user_profiles 
-      WHERE id = auth.uid() AND role IN ('admin', 'super_admin')
+      WHERE id = (select auth.uid()) AND role IN ('admin', 'super_admin')
     )
   );
 
 CREATE POLICY "Categories delete access" ON categories
   FOR DELETE USING (
-    auth.uid() IS NOT NULL AND EXISTS (
+    (select auth.uid()) IS NOT NULL AND EXISTS (
       SELECT 1 FROM user_profiles 
-      WHERE id = auth.uid() AND role IN ('admin', 'super_admin')
+      WHERE id = (select auth.uid()) AND role IN ('admin', 'super_admin')
     )
   );
 
@@ -866,63 +883,63 @@ CREATE POLICY "Tags select access" ON tags
   FOR SELECT USING (true);
 
 CREATE POLICY "Tags insert access" ON tags
-  FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
+  FOR INSERT WITH CHECK ((select auth.uid()) IS NOT NULL);
 
 CREATE POLICY "Tags update access" ON tags
-  FOR UPDATE USING (auth.uid() IS NOT NULL);
+  FOR UPDATE USING ((select auth.uid()) IS NOT NULL);
 
 CREATE POLICY "Tags delete access" ON tags
-  FOR DELETE USING (auth.uid() IS NOT NULL);
+  FOR DELETE USING ((select auth.uid()) IS NOT NULL);
 
 -- User Profiles: Users can see all profiles, but only manage their own
 CREATE POLICY "User profiles select access" ON user_profiles
   FOR SELECT USING (true);
 
 CREATE POLICY "User profiles insert access" ON user_profiles
-  FOR INSERT WITH CHECK (id = auth.uid());
+  FOR INSERT WITH CHECK (id = (select auth.uid()));
 
 CREATE POLICY "User profiles update access" ON user_profiles
-  FOR UPDATE USING (id = auth.uid());
+  FOR UPDATE USING (id = (select auth.uid()));
 
 CREATE POLICY "User profiles delete access" ON user_profiles
-  FOR DELETE USING (id = auth.uid());
+  FOR DELETE USING (id = (select auth.uid()));
 
 -- Stories: Public read for approved, users manage their own
 CREATE POLICY "Stories select access" ON stories
-  FOR SELECT USING (status = 'approved' OR user_id = auth.uid());
+  FOR SELECT USING (status = 'approved' OR user_id = (select auth.uid()));
 
 CREATE POLICY "Stories insert access" ON stories
-  FOR INSERT WITH CHECK (user_id = auth.uid());
+  FOR INSERT WITH CHECK (user_id = (select auth.uid()));
 
 CREATE POLICY "Stories update access" ON stories
-  FOR UPDATE USING (user_id = auth.uid());
+  FOR UPDATE USING (user_id = (select auth.uid()));
 
 CREATE POLICY "Stories delete access" ON stories
-  FOR DELETE USING (user_id = auth.uid());
+  FOR DELETE USING (user_id = (select auth.uid()));
 
 -- Story Drafts: Users can only access their own drafts
 CREATE POLICY "Story drafts access" ON story_drafts
-  FOR ALL USING (user_id = auth.uid())
-  WITH CHECK (user_id = auth.uid());
+  FOR ALL USING (user_id = (select auth.uid()))
+  WITH CHECK (user_id = (select auth.uid()));
 
 -- Story Revisions: Users can see revisions of their own stories
 CREATE POLICY "Story revisions access" ON story_revisions
   FOR ALL USING (
-    EXISTS (SELECT 1 FROM stories WHERE id = story_id AND user_id = auth.uid())
+    EXISTS (SELECT 1 FROM stories WHERE id = story_id AND user_id = (select auth.uid()))
   )
   WITH CHECK (
-    EXISTS (SELECT 1 FROM stories WHERE id = story_id AND user_id = auth.uid())
+    EXISTS (SELECT 1 FROM stories WHERE id = story_id AND user_id = (select auth.uid()))
   );
 
 -- Story Collaborators: Users can manage collaborations on their own stories
 CREATE POLICY "Story collaborators access" ON story_collaborators
   FOR ALL USING (
-    user_id = auth.uid() OR 
-    EXISTS (SELECT 1 FROM stories WHERE id = story_id AND user_id = auth.uid())
+    user_id = (select auth.uid()) OR 
+    EXISTS (SELECT 1 FROM stories WHERE id = story_id AND user_id = (select auth.uid()))
   )
   WITH CHECK (
-    user_id = auth.uid() OR 
-    EXISTS (SELECT 1 FROM stories WHERE id = story_id AND user_id = auth.uid())
+    user_id = (select auth.uid()) OR 
+    EXISTS (SELECT 1 FROM stories WHERE id = story_id AND user_id = (select auth.uid()))
   );
 
 -- Story Tags: Public read, story owners can manage tags on their stories
@@ -931,23 +948,23 @@ CREATE POLICY "Story tags select access" ON story_tags
 
 CREATE POLICY "Story tags modify access" ON story_tags
   FOR INSERT WITH CHECK (
-    EXISTS (SELECT 1 FROM stories WHERE id = story_id AND user_id = auth.uid())
+    EXISTS (SELECT 1 FROM stories WHERE id = story_id AND user_id = (select auth.uid()))
   );
 
 CREATE POLICY "Story tags update access" ON story_tags
   FOR UPDATE USING (
-    EXISTS (SELECT 1 FROM stories WHERE id = story_id AND user_id = auth.uid())
+    EXISTS (SELECT 1 FROM stories WHERE id = story_id AND user_id = (select auth.uid()))
   );
 
 CREATE POLICY "Story tags delete access" ON story_tags
   FOR DELETE USING (
-    EXISTS (SELECT 1 FROM stories WHERE id = story_id AND user_id = auth.uid())
+    EXISTS (SELECT 1 FROM stories WHERE id = story_id AND user_id = (select auth.uid()))
   );
 
 -- Story Analytics: Public read for approved stories, story owners can see all
 CREATE POLICY "Story analytics select access" ON story_analytics
   FOR SELECT USING (
-    EXISTS (SELECT 1 FROM stories WHERE id = story_id AND (status = 'approved' OR user_id = auth.uid()))
+    EXISTS (SELECT 1 FROM stories WHERE id = story_id AND (status = 'approved' OR user_id = (select auth.uid())))
   );
 
 CREATE POLICY "Story analytics insert access" ON story_analytics
@@ -955,12 +972,12 @@ CREATE POLICY "Story analytics insert access" ON story_analytics
 
 CREATE POLICY "Story analytics update access" ON story_analytics
   FOR UPDATE USING (
-    EXISTS (SELECT 1 FROM stories WHERE id = story_id AND user_id = auth.uid())
+    EXISTS (SELECT 1 FROM stories WHERE id = story_id AND user_id = (select auth.uid()))
   );
 
 CREATE POLICY "Story analytics delete access" ON story_analytics
   FOR DELETE USING (
-    EXISTS (SELECT 1 FROM stories WHERE id = story_id AND user_id = auth.uid())
+    EXISTS (SELECT 1 FROM stories WHERE id = story_id AND user_id = (select auth.uid()))
   );
 
 -- Comments: Public read on approved stories, users manage their own comments
@@ -970,13 +987,13 @@ CREATE POLICY "Comments select access" ON comments
   );
 
 CREATE POLICY "Comments insert access" ON comments
-  FOR INSERT WITH CHECK (user_id = auth.uid());
+  FOR INSERT WITH CHECK (user_id = (select auth.uid()));
 
 CREATE POLICY "Comments update access" ON comments
-  FOR UPDATE USING (user_id = auth.uid());
+  FOR UPDATE USING (user_id = (select auth.uid()));
 
 CREATE POLICY "Comments delete access" ON comments
-  FOR DELETE USING (user_id = auth.uid());
+  FOR DELETE USING (user_id = (select auth.uid()));
 
 -- Comment Likes: Users can like comments on approved stories
 CREATE POLICY "Comment likes select access" ON comment_likes
@@ -989,13 +1006,13 @@ CREATE POLICY "Comment likes select access" ON comment_likes
   );
 
 CREATE POLICY "Comment likes modify access" ON comment_likes
-  FOR INSERT WITH CHECK (user_id = auth.uid());
+  FOR INSERT WITH CHECK (user_id = (select auth.uid()));
 
 CREATE POLICY "Comment likes update access" ON comment_likes
-  FOR UPDATE USING (user_id = auth.uid());
+  FOR UPDATE USING (user_id = (select auth.uid()));
 
 CREATE POLICY "Comment likes delete access" ON comment_likes
-  FOR DELETE USING (user_id = auth.uid());
+  FOR DELETE USING (user_id = (select auth.uid()));
 
 -- Likes: Users can like approved stories
 CREATE POLICY "Likes select access" ON likes
@@ -1004,57 +1021,57 @@ CREATE POLICY "Likes select access" ON likes
   );
 
 CREATE POLICY "Likes modify access" ON likes
-  FOR INSERT WITH CHECK (user_id = auth.uid());
+  FOR INSERT WITH CHECK (user_id = (select auth.uid()));
 
 CREATE POLICY "Likes update access" ON likes
-  FOR UPDATE USING (user_id = auth.uid());
+  FOR UPDATE USING (user_id = (select auth.uid()));
 
 CREATE POLICY "Likes delete access" ON likes
-  FOR DELETE USING (user_id = auth.uid());
+  FOR DELETE USING (user_id = (select auth.uid()));
 
 -- Bookmarks: Users manage their own bookmarks
 CREATE POLICY "Bookmarks access" ON bookmarks
-  FOR ALL USING (user_id = auth.uid())
-  WITH CHECK (user_id = auth.uid());
+  FOR ALL USING (user_id = (select auth.uid()))
+  WITH CHECK (user_id = (select auth.uid()));
 
 -- User Follows: Users manage their own follows
 CREATE POLICY "User follows select access" ON user_follows
   FOR SELECT USING (
-    follower_id = auth.uid() OR following_id = auth.uid()
+    follower_id = (select auth.uid()) OR following_id = (select auth.uid())
   );
 
 CREATE POLICY "User follows insert access" ON user_follows
-  FOR INSERT WITH CHECK (follower_id = auth.uid());
+  FOR INSERT WITH CHECK (follower_id = (select auth.uid()));
 
 CREATE POLICY "User follows update access" ON user_follows
-  FOR UPDATE USING (follower_id = auth.uid());
+  FOR UPDATE USING (follower_id = (select auth.uid()));
 
 CREATE POLICY "User follows delete access" ON user_follows
-  FOR DELETE USING (follower_id = auth.uid());
+  FOR DELETE USING (follower_id = (select auth.uid()));
 
 -- User Notifications: Users see only their own notifications
 CREATE POLICY "User notifications access" ON user_notifications
-  FOR ALL USING (user_id = auth.uid())
-  WITH CHECK (user_id = auth.uid());
+  FOR ALL USING (user_id = (select auth.uid()))
+  WITH CHECK (user_id = (select auth.uid()));
 
 -- Story Reports: Users can report stories, admins can manage reports
 CREATE POLICY "Story reports select access" ON story_reports
   FOR SELECT USING (
-    reporter_id = auth.uid() OR 
-    EXISTS (SELECT 1 FROM user_profiles WHERE id = auth.uid() AND role IN ('admin', 'super_admin'))
+    reporter_id = (select auth.uid()) OR 
+    EXISTS (SELECT 1 FROM user_profiles WHERE id = (select auth.uid()) AND role IN ('admin', 'super_admin'))
   );
 
 CREATE POLICY "Story reports insert access" ON story_reports
-  FOR INSERT WITH CHECK (reporter_id = auth.uid());
+  FOR INSERT WITH CHECK (reporter_id = (select auth.uid()));
 
 CREATE POLICY "Story reports update access" ON story_reports
   FOR UPDATE USING (
-    EXISTS (SELECT 1 FROM user_profiles WHERE id = auth.uid() AND role IN ('admin', 'super_admin'))
+    EXISTS (SELECT 1 FROM user_profiles WHERE id = (select auth.uid()) AND role IN ('admin', 'super_admin'))
   );
 
 CREATE POLICY "Story reports delete access" ON story_reports
   FOR DELETE USING (
-    EXISTS (SELECT 1 FROM user_profiles WHERE id = auth.uid() AND role IN ('admin', 'super_admin'))
+    EXISTS (SELECT 1 FROM user_profiles WHERE id = (select auth.uid()) AND role IN ('admin', 'super_admin'))
   );
 
 -- Newsletter Subscriptions: Public can subscribe, users manage their own
@@ -1065,7 +1082,7 @@ CREATE POLICY "Newsletter subscriptions access" ON newsletter_subscriptions
 -- Contact Submissions: Anyone can submit, admins can view
 CREATE POLICY "Contact submissions select access" ON contact_submissions
   FOR SELECT USING (
-    EXISTS (SELECT 1 FROM user_profiles WHERE id = auth.uid() AND role IN ('admin', 'super_admin'))
+    EXISTS (SELECT 1 FROM user_profiles WHERE id = (select auth.uid()) AND role IN ('admin', 'super_admin'))
   );
 
 CREATE POLICY "Contact submissions insert access" ON contact_submissions
@@ -1073,40 +1090,47 @@ CREATE POLICY "Contact submissions insert access" ON contact_submissions
 
 CREATE POLICY "Contact submissions update access" ON contact_submissions
   FOR UPDATE USING (
-    EXISTS (SELECT 1 FROM user_profiles WHERE id = auth.uid() AND role IN ('admin', 'super_admin'))
+    EXISTS (SELECT 1 FROM user_profiles WHERE id = (select auth.uid()) AND role IN ('admin', 'super_admin'))
   );
 
 CREATE POLICY "Contact submissions delete access" ON contact_submissions
   FOR DELETE USING (
-    EXISTS (SELECT 1 FROM user_profiles WHERE id = auth.uid() AND role IN ('admin', 'super_admin'))
+    EXISTS (SELECT 1 FROM user_profiles WHERE id = (select auth.uid()) AND role IN ('admin', 'super_admin'))
   );
 
 -- User Sessions: Users manage their own sessions
 CREATE POLICY "User sessions access" ON user_sessions
-  FOR ALL USING (user_id = auth.uid())
-  WITH CHECK (user_id = auth.uid());
+  FOR ALL USING (user_id = (select auth.uid()))
+  WITH CHECK (user_id = (select auth.uid()));
 
 -- AI Request Logs: Users can see their own requests, admins can see all
 CREATE POLICY "AI request logs select access" ON ai_request_logs
   FOR SELECT USING (
-    user_id = auth.uid() OR 
-    EXISTS (SELECT 1 FROM user_profiles WHERE id = auth.uid() AND role IN ('admin', 'super_admin'))
+    user_id = (select auth.uid()) OR 
+    EXISTS (SELECT 1 FROM user_profiles WHERE id = (select auth.uid()) AND role IN ('admin', 'super_admin'))
   );
 
 CREATE POLICY "AI request logs insert access" ON ai_request_logs
-  FOR INSERT WITH CHECK (user_id = auth.uid());
+  FOR INSERT WITH CHECK (user_id = (select auth.uid()));
 
 CREATE POLICY "AI request logs update access" ON ai_request_logs
-  FOR UPDATE USING (user_id = auth.uid());
+  FOR UPDATE USING (user_id = (select auth.uid()));
 
 CREATE POLICY "AI request logs delete access" ON ai_request_logs
-  FOR DELETE USING (user_id = auth.uid());
+  FOR DELETE USING (user_id = (select auth.uid()));
 
 -- Admin Settings: Admin-only access
 CREATE POLICY "Admin settings access" ON admin_settings
   FOR ALL USING (
-    EXISTS (SELECT 1 FROM user_profiles WHERE id = auth.uid() AND role IN ('admin', 'super_admin'))
+    EXISTS (SELECT 1 FROM user_profiles WHERE id = (select auth.uid()) AND role IN ('admin', 'super_admin'))
   )
   WITH CHECK (
-    EXISTS (SELECT 1 FROM user_profiles WHERE id = auth.uid() AND role IN ('admin', 'super_admin'))
+    EXISTS (SELECT 1 FROM user_profiles WHERE id = (select auth.uid()) AND role IN ('admin', 'super_admin'))
   );
+
+-- SECURITY CONFIGURATION NOTES:
+-- The following items require configuration in the Supabase Dashboard:
+-- 1. Enable Leaked Password Protection: Auth > Settings > Password Security
+-- 2. Enable additional MFA options: Auth > Settings > Multi-Factor Authentication
+-- 3. Configure password strength requirements as needed
+-- These settings cannot be configured via SQL and must be set through the dashboard.
