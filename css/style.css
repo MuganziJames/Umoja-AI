@@ -48,6 +48,11 @@
   /* Border Radius */
   --radius-sm: 4px;
   --radius-md: 8px;
+
+  /* Page Transitions */
+  --transition-duration: 0.3s;
+  --transition-easing: cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-fast: 0.2s;
   --radius-lg: 16px;
   --radius-full: 9999px;
 
@@ -777,4 +782,168 @@ footer {
 .px-5 {
   padding-left: var(--spacing-2xl);
   padding-right: var(--spacing-2xl);
+}
+
+/* ============================
+   PAGE TRANSITIONS
+   ============================ */
+
+/* Base page transition styles */
+body {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: all var(--transition-duration) var(--transition-easing);
+  /* Fallback: show content after 2 seconds even if JavaScript doesn't load */
+  animation: fallback-show 0.5s ease-out 2s forwards;
+}
+
+body.loaded {
+  opacity: 1;
+  transform: translateY(0);
+  animation: none; /* Cancel fallback animation */
+}
+
+/* Fallback animation to ensure page is never permanently hidden */
+@keyframes fallback-show {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+body.page-exit {
+  opacity: 0;
+  transform: translateY(-20px);
+  transition: all var(--transition-duration) var(--transition-easing);
+}
+
+/* Loading indicator during transitions */
+.page-loading {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  z-index: 10000;
+  pointer-events: none;
+}
+
+.page-loading .loading-bar {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--primary-color),
+    var(--primary-light),
+    var(--primary-color),
+    transparent
+  );
+  animation: loading-slide 1.5s infinite;
+}
+
+@keyframes loading-slide {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100vw);
+  }
+}
+
+/* Enhanced transitions for interactive elements */
+.btn,
+.article-item,
+.tab-btn,
+.card,
+.story-card,
+.nav-link {
+  transition: all var(--transition-fast) var(--transition-easing);
+}
+
+.article-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.story-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+}
+
+/* Page-specific transition overrides */
+.hero-section {
+  opacity: 0;
+  transform: translateY(30px);
+  animation: fadeInUp 0.8s ease-out 0.2s forwards;
+}
+
+.feature-card {
+  opacity: 0;
+  transform: translateY(20px);
+  animation: fadeInUp 0.6s ease-out forwards;
+}
+
+.feature-card:nth-child(1) {
+  animation-delay: 0.3s;
+}
+.feature-card:nth-child(2) {
+  animation-delay: 0.4s;
+}
+.feature-card:nth-child(3) {
+  animation-delay: 0.5s;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Mobile transition optimizations */
+@media (max-width: 768px) {
+  body {
+    transform: translateY(10px);
+  }
+
+  body.page-exit {
+    transform: translateY(-10px);
+  }
+
+  .article-item:hover,
+  .btn:hover,
+  .story-card:hover {
+    transform: none; /* Disable hover transforms on mobile */
+  }
+}
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  body,
+  body.loaded,
+  body.page-exit,
+  .btn,
+  .article-item,
+  .tab-btn,
+  .card,
+  .story-card,
+  .nav-link {
+    transition: none !important;
+    animation: none !important;
+    transform: none !important;
+  }
+
+  .page-loading {
+    display: none;
+  }
 }

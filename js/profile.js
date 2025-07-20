@@ -77,7 +77,12 @@ class ProfileManager {
   }
 
   redirectToAuth() {
-    window.location.href = "auth.html";
+    // Use smooth transition instead of direct redirect
+    if (window.smoothNavigate) {
+      window.smoothNavigate("auth.html");
+    } else {
+      window.location.href = "auth.html";
+    }
   }
 
   async loadProfileData() {
@@ -312,7 +317,7 @@ class ProfileManager {
         <p>${message.subtext}</p>
         ${
           tab === "all"
-            ? '<a href="submit.html" class="btn primary">Write Your First Story</a>'
+            ? '<a href="submit.html" class="btn primary smooth-nav">Write Your First Story</a>'
             : ""
         }
       </div>
@@ -364,13 +369,23 @@ class ProfileManager {
   }
 
   async viewArticle(articleId) {
-    // Redirect to the article view page
-    window.location.href = `story-detail.html?id=${articleId}`;
+    // Use smooth transition for article view
+    const url = `story-detail.html?id=${articleId}`;
+    if (window.smoothNavigate) {
+      window.smoothNavigate(url);
+    } else {
+      window.location.href = url;
+    }
   }
 
   async editArticle(articleId) {
-    // Redirect to edit page with article ID
-    window.location.href = `submit.html?edit=${articleId}`;
+    // Use smooth transition for edit page
+    const url = `submit.html?edit=${articleId}`;
+    if (window.smoothNavigate) {
+      window.smoothNavigate(url);
+    } else {
+      window.location.href = url;
+    }
   }
 
   async deleteArticle(articleId, title, status = "story") {
@@ -590,7 +605,11 @@ class ProfileManager {
 
         // Redirect to home page after a short delay
         setTimeout(() => {
-          window.location.href = "../index.html";
+          if (window.smoothNavigate) {
+            window.smoothNavigate("../index.html");
+          } else {
+            window.location.href = "../index.html";
+          }
         }, 1500);
       } else {
         window.showError("Failed to logout: " + result.error);
