@@ -3,6 +3,9 @@
 .env.local
 .env.production
 
+# Configuration files with API keys
+js/config.js
+
 # Build outputs
 dist/
 build/

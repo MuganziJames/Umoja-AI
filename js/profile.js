@@ -629,10 +629,11 @@ class ProfileManager {
 // Initialize profile manager when DOM is loaded
 let profileManager;
 
-document.addEventListener("DOMContentLoaded", async () => {
-  profileManager = new ProfileManager();
-  await profileManager.initialize();
-});
+// This will be called from the HTML after database initialization
+// No need for DOMContentLoaded here as it's handled in profile.html
+
+// Expose ProfileManager globally
+window.ProfileManager = ProfileManager;
 
 // Mobile navigation toggle
 document.addEventListener("DOMContentLoaded", function () {

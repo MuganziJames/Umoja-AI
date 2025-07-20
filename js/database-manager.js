@@ -1,8 +1,7 @@
 // Database Manager for Umoja Project with Supabase
 class DatabaseManager {
   constructor() {
-    // Wait for UmojaConfig to be available
-    this.initializeConfig();
+    this.isInitialized = false;
   }
 
   async initializeConfig() {
@@ -12,11 +11,10 @@ class DatabaseManager {
       this.tables = window.UmojaConfig.TABLES;
       this.status = window.UmojaConfig.STORY_STATUS;
       this.isInitialized = true;
-      console.log("✅ DatabaseManager initialized successfully");
+      console.log("DatabaseManager initialized successfully");
       return true;
     } else {
       this.isInitialized = false;
-      // Return false instead of infinite retry
       return false;
     }
   }
