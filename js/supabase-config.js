@@ -1,10 +1,13 @@
 // Supabase Configuration
 let SUPABASE_URL, SUPABASE_ANON_KEY;
 
-// Use hardcoded values from .env file (simpler approach for script tags)
-SUPABASE_URL = "https://iiqvqveluzicnsxushgg.supabase.co";
+// Get environment variables from Vite's define (injected at build time)
+SUPABASE_URL =
+  typeof __VITE_SUPABASE_URL__ !== "undefined" ? __VITE_SUPABASE_URL__ : null;
 SUPABASE_ANON_KEY =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlpcXZxdmVsdXppY25zeHVzaGdnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIxNjczMTksImV4cCI6MjA2Nzc0MzMxOX0.CcF6WLWWRHK0-TP2Rhvd2wQoqXGv9dpMTtYuAUTQl4M";
+  typeof __VITE_SUPABASE_ANON_KEY__ !== "undefined"
+    ? __VITE_SUPABASE_ANON_KEY__
+    : null;
 
 // Validate environment variables
 if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {

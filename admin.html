@@ -382,11 +382,11 @@
 
           if (error) throw error;
 
-          window.showSuccess?.("✅ Story approved successfully!");
+          console.log("✅ Story approved successfully!");
           await loadStories();
         } catch (error) {
           console.error("Approve error:", error);
-          window.showError?.(`❌ Error approving story: ${error.message}`);
+          console.error(`❌ Error approving story: ${error.message}`);
         }
       }
 
@@ -412,11 +412,11 @@
 
           if (error) throw error;
 
-          window.showWarning?.("❌ Story rejected.");
+          console.log("❌ Story rejected.");
           await loadStories();
         } catch (error) {
           console.error("Reject error:", error);
-          window.showError?.(`❌ Error rejecting story: ${error.message}`);
+          console.error(`❌ Error rejecting story: ${error.message}`);
         }
       }
 
@@ -441,11 +441,11 @@
 
           if (error) throw error;
 
-          window.showSuccess?.("✅ All pending stories approved!");
+          console.log("✅ All pending stories approved!");
           await loadStories();
         } catch (error) {
           console.error("Approve all error:", error);
-          window.showError?.(`❌ Error approving stories: ${error.message}`);
+          console.error(`❌ Error approving stories: ${error.message}`);
         }
       }
 

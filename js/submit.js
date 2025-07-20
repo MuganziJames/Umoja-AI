@@ -87,19 +87,14 @@ fileInput.addEventListener("change", () => {
     const validation = window.InputSanitizer.validateFileUpload(file);
 
     if (!validation.isValid) {
-      window.showError(
-        "File validation failed: " + validation.errors.join(", "),
-        {
-          title: "Invalid File",
-        }
-      );
+      console.error("File validation failed: " + validation.errors.join(", "));
       fileInput.value = "";
       fileName.textContent = "No file chosen";
       return;
     }
 
     fileName.textContent = file.name;
-    window.showSuccess(`Image "${file.name}" selected successfully`);
+    console.log(`Image "${file.name}" selected successfully`);
   } else {
     fileName.textContent = "No file chosen";
   }
@@ -128,7 +123,7 @@ async function saveDraft() {
 
     // Don't save empty drafts
     if (!draftData.title.trim() && !draftData.content.trim()) {
-      window.showWarning("Please add some content before saving as draft");
+      console.log("Please add some content before saving as draft");
       return;
     }
 
@@ -136,9 +131,7 @@ async function saveDraft() {
     if (window.UmojaDB) {
       const result = await window.UmojaDB.saveDraft(draftData);
       if (result.success) {
-        window.showSuccess("Draft saved successfully!", {
-          title: "Draft Saved",
-        });
+        console.log("Draft saved successfully!");
 
         // Clear localStorage backup since it's saved to database
         localStorage.removeItem("story_draft");
@@ -148,11 +141,11 @@ async function saveDraft() {
     } else {
       // Fallback to localStorage
       localStorage.setItem("story_draft", JSON.stringify(draftData));
-      window.showSuccess("Draft saved locally!");
+      console.log("Draft saved locally!");
     }
   } catch (error) {
     console.error("Error saving draft:", error);
-    window.showError("Failed to save draft: " + error.message);
+    console.error("Failed to save draft: " + error.message);
   } finally {
     // Restore button state
     saveDraftBtn.disabled = false;
@@ -187,10 +180,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         const latestDraft = result.drafts[0];
         populateFormWithDraft(latestDraft);
 
-        window.showInfo("Your latest draft has been loaded", {
-          title: "Draft Loaded",
-          duration: 4000,
-        });
+        console.log("Your latest draft has been loaded");
         draftLoaded = true;
       }
     } catch (error) {
@@ -206,10 +196,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         const draftData = JSON.parse(savedDraft);
         populateFormWithDraft(draftData);
 
-        window.showInfo("A saved draft has been loaded from local storage", {
-          title: "Local Draft Loaded",
-          duration: 4000,
-        });
+        console.log("A saved draft has been loaded from local storage");
       } catch (error) {
         console.error("Error parsing local draft:", error);
         localStorage.removeItem(DRAFT_KEY);
@@ -261,15 +248,13 @@ async function loadStoryForEdit() {
     if (result.success && result.story) {
       editStory = result.story;
       populateFormWithDraft(editStory);
-      window.showInfo("Story loaded for editing", {
-        title: "Edit Mode",
-      });
+      console.log("Story loaded for editing");
     } else {
       throw new Error(result.error || "Story not found");
     }
   } catch (error) {
     console.error("Error loading story for edit:", error);
-    window.showError("Failed to load story for editing: " + error.message);
+    console.error("Failed to load story for editing: " + error.message);
     // Redirect back to profile after error
     setTimeout(() => {
       window.location.href = "profile.html";
@@ -286,12 +271,7 @@ async function handleSubmission(e) {
   // Rate limiting check
   if (!window.InputSanitizer.checkRateLimit("story_submission", 3, 300000)) {
     // 3 submissions per 5 minutes
-    window.showError(
-      "Too many submissions. Please wait before submitting again.",
-      {
-        title: "Rate Limit Exceeded",
-      }
-    );
+    console.error("Too many submissions. Please wait before submitting again.");
     return;
   }
 
@@ -309,9 +289,8 @@ async function handleSubmission(e) {
     const contentValidation =
       window.InputSanitizer.validateStoryContent(storyText);
     if (!contentValidation.isValid) {
-      window.showError(
-        "Story content validation failed. Please ensure your story is between 10-5000 characters and contains at least 5 words.",
-        { title: "Invalid Content" }
+      console.error(
+        "Story content validation failed. Please ensure your story is between 10-5000 characters and contains at least 5 words."
       );
       return;
     }
@@ -319,26 +298,19 @@ async function handleSubmission(e) {
     // Sanitize title
     const sanitizedTitle = window.InputSanitizer.sanitizeText(storyTitle);
     if (sanitizedTitle.length < 3) {
-      window.showError("Story title must be at least 3 characters long.", {
-        title: "Invalid Title",
-      });
+      console.error("Story title must be at least 3 characters long.");
       return;
     }
 
     // Additional validation
     if (storyText.length < 500) {
-      window.showError("Your story must be at least 500 characters long.", {
-        title: "Story Too Short",
-      });
+      console.error("Your story must be at least 500 characters long.");
       return;
     }
 
     if (storyText.length > MAX_CHARS) {
-      window.showError(
-        `Your story exceeds the maximum ${MAX_CHARS} character limit.`,
-        {
-          title: "Story Too Long",
-        }
+      console.error(
+        `Your story exceeds the maximum ${MAX_CHARS} character limit.`
       );
       return;
     }
@@ -357,17 +329,13 @@ async function handleSubmission(e) {
     if (window.UmojaDB) {
       const result = await window.UmojaDB.submitStory(submissionData);
       if (result.success) {
-        window.showSuccess("Your story has been submitted successfully!", {
-          title: "Story Submitted",
-        });
+        console.log("Your story has been submitted successfully!");
       } else {
         throw new Error(result.error);
       }
     } else {
       // Fallback for demo mode
-      window.showSuccess("Story submitted successfully! (Demo mode)", {
-        title: "Story Submitted",
-      });
+      console.log("Story submitted successfully! (Demo mode)");
     }
 
     // Hide the form and show success message
@@ -382,9 +350,7 @@ async function handleSubmission(e) {
     submissionSuccess.scrollIntoView({ behavior: "smooth" });
   } catch (error) {
     console.error("Submission error:", error);
-    window.showError("Failed to submit story: " + error.message, {
-      title: "Submission Failed",
-    });
+    console.error("Failed to submit story: " + error.message);
   } finally {
     // Restore button state
     submitBtn.disabled = false;

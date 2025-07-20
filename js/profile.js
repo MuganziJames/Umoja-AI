@@ -35,7 +35,7 @@ class ProfileManager {
       console.log("✅ ProfileManager initialized successfully");
     } catch (error) {
       console.error("❌ ProfileManager initialization failed:", error);
-      this.showError("Failed to load profile. Please try again.");
+      // Removed error notification - just log to console
     }
   }
 
@@ -97,7 +97,7 @@ class ProfileManager {
       this.updateStatistics();
     } catch (error) {
       console.error("Error loading profile data:", error);
-      this.showError("Failed to load profile data");
+      // Removed error notification - just log to console
     }
   }
 
@@ -404,12 +404,8 @@ class ProfileManager {
     }
 
     try {
-      // Show loading notification
-      const loadingNotification = window.showInfo(`Deleting ${status}...`, {
-        title: "Please wait",
-        persistent: true,
-        closable: false,
-      });
+      // Log deletion attempt
+      console.log(`Deleting ${status}...`);
 
       let result;
       if (status === "draft") {
@@ -418,15 +414,9 @@ class ProfileManager {
         result = await this.db.deleteStory(articleId);
       }
 
-      // Remove loading notification
-      window.NotificationSystem.remove(loadingNotification);
-
       if (result.success) {
-        window.showSuccess(
-          `${status === "draft" ? "Draft" : "Story"} deleted successfully`,
-          {
-            title: "Deleted Successfully",
-          }
+        console.log(
+          `${status === "draft" ? "Draft" : "Story"} deleted successfully`
         );
 
         // Remove from UI immediately for better UX
@@ -448,15 +438,10 @@ class ProfileManager {
           this.updateStatistics();
         }, 500);
       } else {
-        window.showError(`Failed to delete ${status}: ${result.error}`, {
-          title: "Delete Failed",
-        });
+        console.error(`Failed to delete ${status}: ${result.error}`);
       }
     } catch (error) {
       console.error(`Error deleting ${status}:`, error);
-      window.showError(`Failed to delete ${status}`, {
-        title: "Delete Failed",
-      });
     }
   }
 
@@ -599,9 +584,7 @@ class ProfileManager {
         this.currentUser = null;
         this.userArticles = [];
 
-        window.showSuccess("Successfully signed out", {
-          title: "Goodbye!",
-        });
+        console.log("Successfully signed out");
 
         // Redirect to home page after a short delay
         setTimeout(() => {
@@ -612,7 +595,7 @@ class ProfileManager {
           }
         }, 1500);
       } else {
-        window.showError("Failed to logout: " + result.error);
+        console.error("Failed to logout: " + result.error);
       }
     } catch (error) {
       console.error("Error during logout:", error);
@@ -620,14 +603,12 @@ class ProfileManager {
       if (window.SessionManager) {
         window.SessionManager.logout();
       }
-      window.showError("Failed to logout");
+      console.error("Failed to logout");
     }
   }
 
   editProfile() {
-    window.showInfo("Profile editing feature is coming soon!", {
-      title: "Feature Coming Soon",
-    });
+    console.log("Profile editing feature is coming soon!");
   }
 
   escapeHtml(text) {
@@ -637,11 +618,11 @@ class ProfileManager {
   }
 
   showError(message) {
-    window.showError(message);
+    console.error(message);
   }
 
   showSuccess(message) {
-    window.showSuccess(message);
+    console.log(message);
   }
 }
 

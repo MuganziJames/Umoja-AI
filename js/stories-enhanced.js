@@ -79,11 +79,11 @@ class StoriesManager {
         this.updateStoryCount();
       } else {
         console.error("❌ Failed to load stories:", result?.error);
-        this.showError("Failed to load stories. Please try again later.");
+        console.error("Failed to load stories. Please try again later.");
       }
     } catch (error) {
       console.error("Error loading stories:", error);
-      this.showError("Error loading stories: " + error.message);
+      console.error("Error loading stories: " + error.message);
     } finally {
       this.showLoading(false);
     }
@@ -110,7 +110,7 @@ class StoriesManager {
         }
       } catch (error) {
         console.error("Search error:", error);
-        this.showError("Search failed. Please try again.");
+        console.error("Search failed. Please try again.");
       } finally {
         this.showLoading(false);
       }
@@ -298,11 +298,11 @@ class StoriesManager {
       if (result?.success) {
         this.displayStoryModal(result.story);
       } else {
-        this.showError("Failed to load story.");
+        console.error("Failed to load story.");
       }
     } catch (error) {
       console.error("Error reading story:", error);
-      this.showError("Error loading story.");
+      console.error("Error loading story.");
     }
   }
 
@@ -732,7 +732,7 @@ class StoriesManager {
   }
 
   showError(message) {
-    this.showNotification(message, "error");
+    console.error(message);
   }
 
   showNotification(message, type = "info") {

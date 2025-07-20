@@ -99,56 +99,10 @@ class GlobalErrorHandler {
     // this.sendToLoggingService(errorInfo);
   }
 
-  // Show user-friendly error messages
+  // Show user-friendly error messages - DISABLED
   showUserFriendlyError(message) {
-    // Check if an error message is already displayed
-    const existingError = document.getElementById("global-error-message");
-    if (existingError) {
-      existingError.remove();
-    }
-
-    // Create error notification
-    const errorDiv = document.createElement("div");
-    errorDiv.id = "global-error-message";
-    errorDiv.style.cssText = `
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      background-color: #ff6b6b;
-      color: white;
-      padding: 15px 20px;
-      border-radius: 8px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-      z-index: 10000;
-      max-width: 400px;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      font-size: 14px;
-      line-height: 1.4;
-      animation: slideInRight 0.3s ease-out;
-    `;
-
-    errorDiv.innerHTML = `
-      <div style="display: flex; align-items: center; justify-content: space-between;">
-        <span style="flex: 1; margin-right: 10px;">
-          <i class="fas fa-exclamation-triangle" style="margin-right: 8px;"></i>
-          ${message}
-        </span>
-        <button onclick="this.parentElement.parentElement.remove()" 
-                style="background: none; border: none; color: white; font-size: 18px; cursor: pointer; padding: 0;">
-          ×
-        </button>
-      </div>
-    `;
-
-    document.body.appendChild(errorDiv);
-
-    // Auto-remove after 8 seconds
-    setTimeout(() => {
-      if (errorDiv.parentNode) {
-        errorDiv.style.animation = "slideOutRight 0.3s ease-in";
-        setTimeout(() => errorDiv.remove(), 300);
-      }
-    }, 8000);
+    // Log error to console instead of showing notification
+    console.error("Error:", message);
   }
 
   // Manual error reporting method

@@ -16,7 +16,18 @@ DROP VIEW IF EXISTS featured_stories CASCADE;
 DROP VIEW IF EXISTS trending_stories CASCADE;
 DROP VIEW IF EXISTS recent_stories CASCADE;
 
--- Drop all existing tables (CASCADE will automatically drop triggers)
+-- Drop existing RLS policies on all tables
+DROP POLICY IF EXISTS "Anyone can view approved stories" ON stories;
+DROP POLICY IF EXISTS "Users can view own stories" ON stories;
+DROP POLICY IF EXISTS "Moderators can view all stories" ON stories;
+DROP POLICY IF EXISTS "Users can insert own stories" ON stories;
+DROP POLICY IF EXISTS "Users can update own stories" ON stories;
+DROP POLICY IF EXISTS "Moderators can update any story" ON stories;
+DROP POLICY IF EXISTS "Everyone can view all stories" ON stories;
+DROP POLICY IF EXISTS "Authenticated users can insert stories" ON stories;
+DROP POLICY IF EXISTS "Users can delete own stories" ON stories;
+
+-- Drop all existing tables (CASCADE will automatically drop triggers and remaining policies)
 DROP TABLE IF EXISTS ai_request_logs CASCADE;
 DROP TABLE IF EXISTS contact_submissions CASCADE;
 DROP TABLE IF EXISTS newsletter_subscriptions CASCADE;
@@ -816,30 +827,327 @@ FOR UPDATE USING (bucket_id = 'story-images' AND auth.uid()::text = (storage.fol
 CREATE POLICY "Allow users to delete own files" ON storage.objects
 FOR DELETE USING (bucket_id = 'story-images' AND auth.uid()::text = (storage.foldername(name))[1]);
 */
--- Fix Stories RLS Policies
--- This script will drop existing complex policies and create simple ones
+-- COMPREHENSIVE RLS POLICIES
+-- Each table gets ONE policy that covers ALL operations (SELECT, INSERT, UPDATE, DELETE)
 
--- Drop all existing story policies
-DROP POLICY IF EXISTS "Anyone can view approved stories" ON stories;
-DROP POLICY IF EXISTS "Users can view own stories" ON stories;
-DROP POLICY IF EXISTS "Moderators can view all stories" ON stories;
-DROP POLICY IF EXISTS "Users can insert own stories" ON stories;
-DROP POLICY IF EXISTS "Users can update own stories" ON stories;
-DROP POLICY IF EXISTS "Moderators can update any story" ON stories;
+-- Enable RLS on all tables
+ALTER TABLE categories ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tags ENABLE ROW LEVEL SECURITY;  
+ALTER TABLE user_profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE stories ENABLE ROW LEVEL SECURITY;
+ALTER TABLE story_drafts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE story_revisions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE story_collaborators ENABLE ROW LEVEL SECURITY;
+ALTER TABLE story_tags ENABLE ROW LEVEL SECURITY;
+ALTER TABLE story_analytics ENABLE ROW LEVEL SECURITY;
+ALTER TABLE comments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE comment_likes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE likes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE bookmarks ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_follows ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_notifications ENABLE ROW LEVEL SECURITY;
+ALTER TABLE story_reports ENABLE ROW LEVEL SECURITY;
+ALTER TABLE newsletter_subscriptions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE contact_submissions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_sessions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ai_request_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE admin_settings ENABLE ROW LEVEL SECURITY;
 
--- Create simple, permissive policies
--- Allow everyone to view all stories (no restrictions)
-CREATE POLICY "Everyone can view all stories" ON stories
-    FOR SELECT USING (true);
+-- Categories: Public read, admin-only write
+CREATE POLICY "Categories select access" ON categories
+  FOR SELECT USING (true);
 
--- Allow authenticated users to insert stories
-CREATE POLICY "Authenticated users can insert stories" ON stories
-    FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
+CREATE POLICY "Categories modify access" ON categories
+  FOR INSERT WITH CHECK (
+    auth.uid() IS NOT NULL AND EXISTS (
+      SELECT 1 FROM user_profiles 
+      WHERE id = auth.uid() AND role IN ('admin', 'super_admin')
+    )
+  );
 
--- Allow users to update their own stories
-CREATE POLICY "Users can update own stories" ON stories
-    FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Categories update access" ON categories
+  FOR UPDATE USING (
+    auth.uid() IS NOT NULL AND EXISTS (
+      SELECT 1 FROM user_profiles 
+      WHERE id = auth.uid() AND role IN ('admin', 'super_admin')
+    )
+  );
 
--- Allow users to delete their own stories
-CREATE POLICY "Users can delete own stories" ON stories
-    FOR DELETE USING (auth.uid() = user_id);
+CREATE POLICY "Categories delete access" ON categories
+  FOR DELETE USING (
+    auth.uid() IS NOT NULL AND EXISTS (
+      SELECT 1 FROM user_profiles 
+      WHERE id = auth.uid() AND role IN ('admin', 'super_admin')
+    )
+  );
+
+-- Tags: Public read, authenticated users can create
+CREATE POLICY "Tags select access" ON tags
+  FOR SELECT USING (true);
+
+CREATE POLICY "Tags insert access" ON tags
+  FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
+
+CREATE POLICY "Tags update access" ON tags
+  FOR UPDATE USING (auth.uid() IS NOT NULL);
+
+CREATE POLICY "Tags delete access" ON tags
+  FOR DELETE USING (auth.uid() IS NOT NULL);
+
+-- User Profiles: Users can see all profiles, but only manage their own
+CREATE POLICY "User profiles select access" ON user_profiles
+  FOR SELECT USING (true);
+
+CREATE POLICY "User profiles insert access" ON user_profiles
+  FOR INSERT WITH CHECK (id = auth.uid());
+
+CREATE POLICY "User profiles update access" ON user_profiles
+  FOR UPDATE USING (id = auth.uid());
+
+CREATE POLICY "User profiles delete access" ON user_profiles
+  FOR DELETE USING (id = auth.uid());
+
+-- Stories: Public read for approved, users manage their own
+CREATE POLICY "Stories select access" ON stories
+  FOR SELECT USING (status = 'approved' OR user_id = auth.uid());
+
+CREATE POLICY "Stories insert access" ON stories
+  FOR INSERT WITH CHECK (user_id = auth.uid());
+
+CREATE POLICY "Stories update access" ON stories
+  FOR UPDATE USING (user_id = auth.uid());
+
+CREATE POLICY "Stories delete access" ON stories
+  FOR DELETE USING (user_id = auth.uid());
+
+-- Story Drafts: Users can only access their own drafts
+CREATE POLICY "Story drafts access" ON story_drafts
+  FOR ALL USING (user_id = auth.uid())
+  WITH CHECK (user_id = auth.uid());
+
+-- Story Revisions: Users can see revisions of their own stories
+CREATE POLICY "Story revisions access" ON story_revisions
+  FOR ALL USING (
+    EXISTS (SELECT 1 FROM stories WHERE id = story_id AND user_id = auth.uid())
+  )
+  WITH CHECK (
+    EXISTS (SELECT 1 FROM stories WHERE id = story_id AND user_id = auth.uid())
+  );
+
+-- Story Collaborators: Users can manage collaborations on their own stories
+CREATE POLICY "Story collaborators access" ON story_collaborators
+  FOR ALL USING (
+    user_id = auth.uid() OR 
+    EXISTS (SELECT 1 FROM stories WHERE id = story_id AND user_id = auth.uid())
+  )
+  WITH CHECK (
+    user_id = auth.uid() OR 
+    EXISTS (SELECT 1 FROM stories WHERE id = story_id AND user_id = auth.uid())
+  );
+
+-- Story Tags: Public read, story owners can manage tags on their stories
+CREATE POLICY "Story tags select access" ON story_tags
+  FOR SELECT USING (true);
+
+CREATE POLICY "Story tags modify access" ON story_tags
+  FOR INSERT WITH CHECK (
+    EXISTS (SELECT 1 FROM stories WHERE id = story_id AND user_id = auth.uid())
+  );
+
+CREATE POLICY "Story tags update access" ON story_tags
+  FOR UPDATE USING (
+    EXISTS (SELECT 1 FROM stories WHERE id = story_id AND user_id = auth.uid())
+  );
+
+CREATE POLICY "Story tags delete access" ON story_tags
+  FOR DELETE USING (
+    EXISTS (SELECT 1 FROM stories WHERE id = story_id AND user_id = auth.uid())
+  );
+
+-- Story Analytics: Public read for approved stories, story owners can see all
+CREATE POLICY "Story analytics select access" ON story_analytics
+  FOR SELECT USING (
+    EXISTS (SELECT 1 FROM stories WHERE id = story_id AND (status = 'approved' OR user_id = auth.uid()))
+  );
+
+CREATE POLICY "Story analytics insert access" ON story_analytics
+  FOR INSERT WITH CHECK (true);
+
+CREATE POLICY "Story analytics update access" ON story_analytics
+  FOR UPDATE USING (
+    EXISTS (SELECT 1 FROM stories WHERE id = story_id AND user_id = auth.uid())
+  );
+
+CREATE POLICY "Story analytics delete access" ON story_analytics
+  FOR DELETE USING (
+    EXISTS (SELECT 1 FROM stories WHERE id = story_id AND user_id = auth.uid())
+  );
+
+-- Comments: Public read on approved stories, users manage their own comments
+CREATE POLICY "Comments select access" ON comments
+  FOR SELECT USING (
+    EXISTS (SELECT 1 FROM stories WHERE id = story_id AND status = 'approved')
+  );
+
+CREATE POLICY "Comments insert access" ON comments
+  FOR INSERT WITH CHECK (user_id = auth.uid());
+
+CREATE POLICY "Comments update access" ON comments
+  FOR UPDATE USING (user_id = auth.uid());
+
+CREATE POLICY "Comments delete access" ON comments
+  FOR DELETE USING (user_id = auth.uid());
+
+-- Comment Likes: Users can like comments on approved stories
+CREATE POLICY "Comment likes select access" ON comment_likes
+  FOR SELECT USING (
+    EXISTS (
+      SELECT 1 FROM comments c 
+      JOIN stories s ON c.story_id = s.id 
+      WHERE c.id = comment_id AND s.status = 'approved'
+    )
+  );
+
+CREATE POLICY "Comment likes modify access" ON comment_likes
+  FOR INSERT WITH CHECK (user_id = auth.uid());
+
+CREATE POLICY "Comment likes update access" ON comment_likes
+  FOR UPDATE USING (user_id = auth.uid());
+
+CREATE POLICY "Comment likes delete access" ON comment_likes
+  FOR DELETE USING (user_id = auth.uid());
+
+-- Likes: Users can like approved stories
+CREATE POLICY "Likes select access" ON likes
+  FOR SELECT USING (
+    EXISTS (SELECT 1 FROM stories WHERE id = story_id AND status = 'approved')
+  );
+
+CREATE POLICY "Likes modify access" ON likes
+  FOR INSERT WITH CHECK (user_id = auth.uid());
+
+CREATE POLICY "Likes update access" ON likes
+  FOR UPDATE USING (user_id = auth.uid());
+
+CREATE POLICY "Likes delete access" ON likes
+  FOR DELETE USING (user_id = auth.uid());
+
+-- Bookmarks: Users manage their own bookmarks
+CREATE POLICY "Bookmarks access" ON bookmarks
+  FOR ALL USING (user_id = auth.uid())
+  WITH CHECK (user_id = auth.uid());
+
+-- User Follows: Users manage their own follows
+CREATE POLICY "User follows select access" ON user_follows
+  FOR SELECT USING (
+    follower_id = auth.uid() OR following_id = auth.uid()
+  );
+
+CREATE POLICY "User follows insert access" ON user_follows
+  FOR INSERT WITH CHECK (follower_id = auth.uid());
+
+CREATE POLICY "User follows update access" ON user_follows
+  FOR UPDATE USING (follower_id = auth.uid());
+
+CREATE POLICY "User follows delete access" ON user_follows
+  FOR DELETE USING (follower_id = auth.uid());
+
+-- User Notifications: Users see only their own notifications
+CREATE POLICY "User notifications access" ON user_notifications
+  FOR ALL USING (user_id = auth.uid())
+  WITH CHECK (user_id = auth.uid());
+
+-- Story Reports: Users can report stories, admins can manage reports
+CREATE POLICY "Story reports select access" ON story_reports
+  FOR SELECT USING (
+    reporter_id = auth.uid() OR 
+    EXISTS (SELECT 1 FROM user_profiles WHERE id = auth.uid() AND role IN ('admin', 'super_admin'))
+  );
+
+CREATE POLICY "Story reports insert access" ON story_reports
+  FOR INSERT WITH CHECK (reporter_id = auth.uid());
+
+CREATE POLICY "Story reports update access" ON story_reports
+  FOR UPDATE USING (
+    EXISTS (SELECT 1 FROM user_profiles WHERE id = auth.uid() AND role IN ('admin', 'super_admin'))
+  );
+
+CREATE POLICY "Story reports delete access" ON story_reports
+  FOR DELETE USING (
+    EXISTS (SELECT 1 FROM user_profiles WHERE id = auth.uid() AND role IN ('admin', 'super_admin'))
+  );
+
+-- Newsletter Subscriptions: Public can subscribe, users manage their own
+CREATE POLICY "Newsletter subscriptions access" ON newsletter_subscriptions
+  FOR ALL USING (true)
+  WITH CHECK (true);
+
+-- Contact Submissions: Anyone can submit, admins can view
+CREATE POLICY "Contact submissions select access" ON contact_submissions
+  FOR SELECT USING (
+    EXISTS (SELECT 1 FROM user_profiles WHERE id = auth.uid() AND role IN ('admin', 'super_admin'))
+  );
+
+CREATE POLICY "Contact submissions insert access" ON contact_submissions
+  FOR INSERT WITH CHECK (true);
+
+CREATE POLICY "Contact submissions update access" ON contact_submissions
+  FOR UPDATE USING (
+    EXISTS (SELECT 1 FROM user_profiles WHERE id = auth.uid() AND role IN ('admin', 'super_admin'))
+  );
+
+CREATE POLICY "Contact submissions delete access" ON contact_submissions
+  FOR DELETE USING (
+    EXISTS (SELECT 1 FROM user_profiles WHERE id = auth.uid() AND role IN ('admin', 'super_admin'))
+  );
+
+-- User Sessions: Users manage their own sessions
+CREATE POLICY "User sessions access" ON user_sessions
+  FOR ALL USING (user_id = auth.uid())
+  WITH CHECK (user_id = auth.uid());
+
+-- AI Request Logs: Users can see their own requests, admins can see all
+CREATE POLICY "AI request logs select access" ON ai_request_logs
+  FOR SELECT USING (
+    user_id = auth.uid() OR 
+    EXISTS (SELECT 1 FROM user_profiles WHERE id = auth.uid() AND role IN ('admin', 'super_admin'))
+  );
+
+CREATE POLICY "AI request logs insert access" ON ai_request_logs
+  FOR INSERT WITH CHECK (user_id = auth.uid());
+
+CREATE POLICY "AI request logs update access" ON ai_request_logs
+  FOR UPDATE USING (user_id = auth.uid());
+
+CREATE POLICY "AI request logs delete access" ON ai_request_logs
+  FOR DELETE USING (user_id = auth.uid());
+
+-- Admin Settings: Admin-only access
+CREATE POLICY "Admin settings access" ON admin_settings
+  FOR ALL USING (
+    EXISTS (SELECT 1 FROM user_profiles WHERE id = auth.uid() AND role IN ('admin', 'super_admin'))
+  )
+  WITH CHECK (
+    EXISTS (SELECT 1 FROM user_profiles WHERE id = auth.uid() AND role IN ('admin', 'super_admin'))
+  );
+
+/*
+-- Storage Bucket Policies (Apply these in Supabase Dashboard)
+-- First create the bucket: story-images (public: true)
+
+-- Allow authenticated uploads
+CREATE POLICY "Allow authenticated uploads" ON storage.objects
+  FOR INSERT WITH CHECK (bucket_id = 'story-images' AND auth.role() = 'authenticated');
+
+-- Allow public read access
+CREATE POLICY "Allow public read access" ON storage.objects
+  FOR SELECT USING (bucket_id = 'story-images');
+
+-- Allow users to update own files
+CREATE POLICY "Allow users to update own files" ON storage.objects
+  FOR UPDATE USING (bucket_id = 'story-images' AND auth.uid()::text = (storage.foldername(name))[1]);
+
+-- Allow users to delete own files  
+CREATE POLICY "Allow users to delete own files" ON storage.objects
+  FOR DELETE USING (bucket_id = 'story-images' AND auth.uid()::text = (storage.foldername(name))[1]);
+*/
