@@ -807,26 +807,6 @@ LEFT JOIN user_profiles up ON s.user_id = up.id
 WHERE s.status = 'approved'
 ORDER BY s.published_at DESC;
 
--- Storage bucket policies (uncomment to apply)
-/*
--- First create the bucket in Supabase Storage UI, then apply these policies:
-
--- Allow authenticated users to upload images
-INSERT INTO storage.buckets (id, name, public) VALUES ('story-images', 'story-images', true);
-
--- Storage policies
-CREATE POLICY "Allow authenticated uploads" ON storage.objects
-FOR INSERT WITH CHECK (bucket_id = 'story-images' AND auth.role() = 'authenticated');
-
-CREATE POLICY "Allow public read access" ON storage.objects
-FOR SELECT USING (bucket_id = 'story-images');
-
-CREATE POLICY "Allow users to update own files" ON storage.objects
-FOR UPDATE USING (bucket_id = 'story-images' AND auth.uid()::text = (storage.foldername(name))[1]);
-
-CREATE POLICY "Allow users to delete own files" ON storage.objects
-FOR DELETE USING (bucket_id = 'story-images' AND auth.uid()::text = (storage.foldername(name))[1]);
-*/
 -- COMPREHENSIVE RLS POLICIES
 -- Each table gets ONE policy that covers ALL operations (SELECT, INSERT, UPDATE, DELETE)
 
@@ -1130,24 +1110,3 @@ CREATE POLICY "Admin settings access" ON admin_settings
   WITH CHECK (
     EXISTS (SELECT 1 FROM user_profiles WHERE id = auth.uid() AND role IN ('admin', 'super_admin'))
   );
-
-/*
--- Storage Bucket Policies (Apply these in Supabase Dashboard)
--- First create the bucket: story-images (public: true)
-
--- Allow authenticated uploads
-CREATE POLICY "Allow authenticated uploads" ON storage.objects
-  FOR INSERT WITH CHECK (bucket_id = 'story-images' AND auth.role() = 'authenticated');
-
--- Allow public read access
-CREATE POLICY "Allow public read access" ON storage.objects
-  FOR SELECT USING (bucket_id = 'story-images');
-
--- Allow users to update own files
-CREATE POLICY "Allow users to update own files" ON storage.objects
-  FOR UPDATE USING (bucket_id = 'story-images' AND auth.uid()::text = (storage.foldername(name))[1]);
-
--- Allow users to delete own files  
-CREATE POLICY "Allow users to delete own files" ON storage.objects
-  FOR DELETE USING (bucket_id = 'story-images' AND auth.uid()::text = (storage.foldername(name))[1]);
-*/

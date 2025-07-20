@@ -8,11 +8,8 @@ class ProfileManager {
 
   async initialize() {
     try {
-      console.log("🔄 Initializing ProfileManager...");
-
       // Wait for database to be ready
       if (!window.UmojaDB) {
-        console.log("⏳ Waiting for database...");
         await this.waitForDatabase();
       }
 
@@ -31,10 +28,7 @@ class ProfileManager {
       await this.loadProfileData();
       this.setupEventListeners();
       // Navigation will be handled by auth-guard.js
-
-      console.log("✅ ProfileManager initialized successfully");
     } catch (error) {
-      console.error("❌ ProfileManager initialization failed:", error);
       // Removed error notification - just log to console
     }
   }
@@ -67,7 +61,7 @@ class ProfileManager {
 
       // Update session if database has user but session doesn't
       if (window.SessionManager) {
-        window.SessionManager.setSession(user, false); // Default to 24h timeout
+        window.SessionManager.setSession(user, false);
       }
 
       return { success: true, user: user };
@@ -96,7 +90,6 @@ class ProfileManager {
       // Update statistics
       this.updateStatistics();
     } catch (error) {
-      console.error("Error loading profile data:", error);
       // Removed error notification - just log to console
     }
   }
@@ -155,12 +148,10 @@ class ProfileManager {
 
         this.renderArticles();
       } else {
-        console.error("Failed to load articles:", result.error);
         this.userArticles = [];
         this.renderArticles();
       }
     } catch (error) {
-      console.error("Error loading articles:", error);
       this.userArticles = [];
       this.renderArticles();
     }
@@ -405,7 +396,6 @@ class ProfileManager {
 
     try {
       // Log deletion attempt
-      console.log(`Deleting ${status}...`);
 
       let result;
       if (status === "draft") {
@@ -415,10 +405,6 @@ class ProfileManager {
       }
 
       if (result.success) {
-        console.log(
-          `${status === "draft" ? "Draft" : "Story"} deleted successfully`
-        );
-
         // Remove from UI immediately for better UX
         const articleElement = document.querySelector(
           `[data-article-id="${articleId}"]`
@@ -438,10 +424,10 @@ class ProfileManager {
           this.updateStatistics();
         }, 500);
       } else {
-        console.error(`Failed to delete ${status}: ${result.error}`);
+        // Error handling - could show user notification here
       }
     } catch (error) {
-      console.error(`Error deleting ${status}:`, error);
+      // Error handling - could show user notification here
     }
   }
 
@@ -584,8 +570,6 @@ class ProfileManager {
         this.currentUser = null;
         this.userArticles = [];
 
-        console.log("Successfully signed out");
-
         // Redirect to home page after a short delay
         setTimeout(() => {
           if (window.smoothNavigate) {
@@ -595,20 +579,18 @@ class ProfileManager {
           }
         }, 1500);
       } else {
-        console.error("Failed to logout: " + result.error);
+        // Error handling - could show user notification here
       }
     } catch (error) {
-      console.error("Error during logout:", error);
       // Still clear session and redirect even if database logout fails
       if (window.SessionManager) {
         window.SessionManager.logout();
       }
-      console.error("Failed to logout");
     }
   }
 
   editProfile() {
-    console.log("Profile editing feature is coming soon!");
+    // Feature coming soon
   }
 
   escapeHtml(text) {
@@ -618,19 +600,16 @@ class ProfileManager {
   }
 
   showError(message) {
-    console.error(message);
+    // Error handling placeholder
   }
 
   showSuccess(message) {
-    console.log(message);
+    // Success handling placeholder
   }
 }
 
 // Initialize profile manager when DOM is loaded
 let profileManager;
-
-// This will be called from the HTML after database initialization
-// No need for DOMContentLoaded here as it's handled in profile.html
 
 // Expose ProfileManager globally
 window.ProfileManager = ProfileManager;

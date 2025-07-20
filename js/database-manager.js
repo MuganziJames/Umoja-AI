@@ -11,7 +11,6 @@ class DatabaseManager {
       this.tables = window.UmojaConfig.TABLES;
       this.status = window.UmojaConfig.STORY_STATUS;
       this.isInitialized = true;
-      console.log("DatabaseManager initialized successfully");
       return true;
     } else {
       this.isInitialized = false;
@@ -121,15 +120,10 @@ class DatabaseManager {
     try {
       this.ensureInitialized();
 
-      console.log("🔍 STORY SUBMISSION STARTED:", storyData);
-      console.log("⏱️ Time:", new Date().toISOString());
-
       const user = await this.getCurrentUser();
       if (!user) {
         throw new Error("User must be authenticated to submit stories");
       }
-
-      console.log("✅ User authenticated:", user.email);
 
       // Validate required fields (simplified)
       if (!storyData.title || !storyData.content) {

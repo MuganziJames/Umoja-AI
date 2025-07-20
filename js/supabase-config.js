@@ -28,9 +28,6 @@ function initializeConfiguration() {
 
   // Validate configuration
   if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-    console.error(
-      "Supabase configuration missing. Please check config.js file."
-    );
     throw new Error(
       "Missing Supabase configuration. Please check config.js file."
     );
@@ -45,8 +42,6 @@ function initializeSupabase() {
     return false;
   }
 
-  console.log("Attempting to initialize Supabase...");
-
   const SupabaseLib = window.Supabase || window.supabase;
 
   if (
@@ -57,14 +52,11 @@ function initializeSupabase() {
   ) {
     try {
       supabase = SupabaseLib.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-      console.log("Supabase client initialized successfully");
       return true;
     } catch (error) {
-      console.error("Error initializing Supabase:", error);
       return false;
     }
   } else {
-    console.error("Supabase library not available or configuration missing");
     return false;
   }
 }
@@ -84,20 +76,12 @@ document.addEventListener("DOMContentLoaded", () => {
         if (initializeSupabase()) {
           clearInterval(checkInterval);
           createUmojaConfig();
-          console.log(
-            "Supabase initialization complete after",
-            attempts,
-            "attempts"
-          );
         } else if (attempts >= maxAttempts) {
           clearInterval(checkInterval);
-          console.error("Supabase library failed to load within timeout");
 
           setTimeout(() => {
             if (initializeSupabase()) {
               createUmojaConfig();
-            } else {
-              console.error("Fallback initialization also failed");
             }
           }, 2000);
         }
@@ -110,19 +94,11 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 function createUmojaConfig() {
-  console.log("Creating UmojaConfig...", {
-    supabase: !!supabase,
-    TABLES,
-    STORY_STATUS,
-  });
-
   window.UmojaConfig = {
     supabase,
     TABLES,
     STORY_STATUS,
   };
-
-  console.log("UmojaConfig created successfully");
 }
 
 window.createUmojaConfig = createUmojaConfig;
