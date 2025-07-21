@@ -164,7 +164,8 @@ class ChatManager {
       // Get AI response
       const response = await window.UmojaAI.provideSupportChat(
         message,
-        this.conversationHistory
+        this.conversationHistory,
+        { maxTokens: 600 }
       );
 
       // Hide typing indicator

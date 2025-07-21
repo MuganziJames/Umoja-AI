@@ -103,7 +103,7 @@ class AIServices {
   }
 
   // AI Chat Support - Empathetic conversation for emotional support
-  async provideSupportChat(userMessage, conversationHistory = []) {
+  async provideSupportChat(userMessage, conversationHistory = [], opts = {}) {
     if (!this.AI_ENABLED) {
       return {
         success: false,
@@ -173,7 +173,7 @@ Respond in a warm, understanding tone as if talking to a friend who needs suppor
       );
 
       const response = await this.makeOpenRouterCall(messages, {
-        maxTokens: 300,
+        maxTokens: opts.maxTokens || 300,
         temperature: 0.8, // More creative and empathetic responses
       });
 
