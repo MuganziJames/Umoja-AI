@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Support Chat - Voices of Change</title>
+    <link rel="stylesheet" href="../css/style.css" />
+    <link rel="stylesheet" href="../css/chat.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+
+    <!-- Scripts -->
+    <script src="../js/config.js"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="../js/notification-system.js"></script>
+    <script src="../js/global-error-handler.js"></script>
+    <script src="../js/input-sanitizer.js"></script>
+    <script src="../js/page-transitions.js"></script>
+    <script src="../js/supabase-config.js"></script>
+    <script src="../js/database-manager.js"></script>
+    <script src="../js/session-manager.js"></script>
+    <script src="../js/auth-guard.js"></script>
+    <script src="../js/ai-services.js"></script>
+    <script src="../js/navigation.js"></script>
+  </head>
+  <body>
+    <header>
+      <div class="container">
+        <div class="logo">
+          <h1>Voices of Change</h1>
+          <p class="tagline">Amplifying stories that matter</p>
+        </div>
+        <nav>
+          <ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="stories.html">Stories</a></li>
+            <li><a href="submit.html">Submit Your Story</a></li>
+            <li><a href="about.html">About Umoja</a></li>
+            <li><a href="contact.html">Contact</a></li>
+            <li><a href="chat.html" class="active">AI Support</a></li>
+            <li id="auth-nav-item">
+              <!-- Profile dropdown will be inserted here by auth-guard -->
+            </li>
+          </ul>
+        </nav>
+        <div class="mobile-nav-toggle">
+          <i class="fas fa-bars"></i>
+        </div>
+      </div>
+    </header>
+
+    <section class="chat-page">
+      <div class="container">
+        <div class="chat-header">
+          <div class="chat-intro">
+            <div class="ai-avatar">
+              <i class="fas fa-heart"></i>
+            </div>
+            <div class="intro-text">
+              <h1>Umoja AI Support</h1>
+              <p>A safe space to share your thoughts and feelings. I'm here to listen, support, and provide resources when you need them.</p>
+            </div>
+          </div>
+          
+          <!-- Crisis Resources (always visible) -->
+          <div class="crisis-resources">
+            <h3><i class="fas fa-life-ring"></i> Crisis Resources</h3>
+            <div class="resources-grid">
+              <a href="tel:988" class="resource-link">
+                <i class="fas fa-phone"></i>
+                <span>988 - Suicide Prevention Lifeline</span>
+              </a>
+              <a href="sms:741741" class="resource-link">
+                <i class="fas fa-sms"></i>
+                <span>Text HOME to 741741 - Crisis Text Line</span>
+              </a>
+              <a href="https://www.iasp.info/resources/Crisis_Centres/" target="_blank" class="resource-link">
+                <i class="fas fa-globe"></i>
+                <span>International Crisis Centers</span>
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <div class="chat-container">
+          <div class="chat-messages" id="chat-messages">
+            <!-- Initial welcome message -->
+            <div class="message ai-message" data-timestamp="">
+              <div class="message-avatar">
+                <i class="fas fa-heart"></i>
+              </div>
+              <div class="message-content">
+                <div class="message-text">
+                  <p>Hello! I'm Umoja AI, and I'm here to provide emotional support and understanding. This is a safe space where you can share whatever is on your mind.</p>
+                  <p>Whether you're dealing with mental health challenges, social justice issues, personal struggles, or just need someone to listen - I'm here for you.</p>
+                  <p><strong>How are you feeling today?</strong></p>
+                </div>
+                <div class="message-time" data-time="now">Just now</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="chat-input-area">
+            <div class="typing-indicator" id="typing-indicator">
+              <div class="message ai-message">
+                <div class="message-avatar">
+                  <i class="fas fa-heart"></i>
+                </div>
+                <div class="message-content">
+                  <div class="typing-dots">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="chat-input-container">
+              <div class="input-wrapper">
+                <textarea 
+                  id="chat-input" 
+                  placeholder="Share what's on your mind... (Press Enter to send, Shift+Enter for new line)"
+                  rows="1"
+                  maxlength="2000"
+                ></textarea>
+                <button id="send-button" class="send-btn" disabled>
+                  <i class="fas fa-paper-plane"></i>
+                </button>
+              </div>
+              <div class="input-footer">
+                <div class="character-count">
+                  <span id="char-count">0</span>/2000
+                </div>
+                <div class="chat-actions">
+                  <button id="clear-chat" class="action-btn" title="Clear conversation">
+                    <i class="fas fa-trash"></i> Clear Chat
+                  </button>
+                  <button id="save-chat" class="action-btn" title="Save conversation" style="display: none;">
+                    <i class="fas fa-save"></i> Save
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Loading overlay -->
+    <div class="loading-overlay" id="loading-overlay" style="display: none;">
+      <div class="loading-content">
+        <div class="spinner"></div>
+        <p>Connecting to AI support...</p>
+      </div>
+    </div>
+
+    <script src="../js/chat.js"></script>
+  </body>
+</html>
