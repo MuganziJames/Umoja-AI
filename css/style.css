@@ -246,32 +246,7 @@ nav a.active::after {
   background-color: var(--primary-color);
 }
 
-/* AI Support Link Styling */
-.ai-support-link {
-  background: linear-gradient(135deg, #667eea, #764ba2) !important;
-  color: white !important;
-  padding: 0.5rem 1rem !important;
-  border-radius: var(--radius-md) !important;
-  transition: all var(--transition-normal) !important;
-  display: flex !important;
-  align-items: center !important;
-  gap: 0.5rem !important;
-  font-weight: 600 !important;
-}
-
-.ai-support-link:hover {
-  transform: translateY(-2px) !important;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4) !important;
-  color: white !important;
-}
-
-.ai-support-link i {
-  font-size: 0.9rem;
-}
-
-.ai-support-link::after {
-  display: none !important;
-}
+/* AI Support now uses normal navigation styling */
 
 /* Navigation Button Styles - Smaller size to match nav items */
 nav .btn {

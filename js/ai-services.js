@@ -8,8 +8,18 @@ class AIServices {
       ? window.CONFIG.OPENROUTER_API_KEY
       : null;
 
-    this.PRIMARY_MODEL = "deepseek/deepseek-r1-0528-qwen3-8b";
-    this.BACKUP_MODEL = "meta-llama/llama-4-maverick:free";
+    // Multiple free models for better reliability
+    this.FREE_MODELS = [
+      "meta-llama/llama-3.1-70b-instruct:free",
+      "meta-llama/llama-3-70b-instruct:free",
+      "openchat/openchat-3.5-0106:free",
+      "mistralai/mistral-7b-instruct:free",
+      "google/gemma-7b-it:free",
+      "meta-llama/llama-4-maverick:free",
+    ];
+
+    this.PRIMARY_MODEL = this.FREE_MODELS[0]; // Use first free model as primary
+    this.currentModelIndex = 0;
     this.BASE_URL = "https://openrouter.ai/api/v1";
 
     this.AI_ENABLED =
@@ -25,18 +35,14 @@ class AIServices {
     }
   }
 
-  // Make OpenRouter API call with fallback model and rate limiting
+  // Make OpenRouter API call with fallback models and rate limiting
   async makeOpenRouterCall(messages, options = {}) {
     if (!this.AI_ENABLED || !this.OPENROUTER_API_KEY) {
       console.warn("AI features disabled");
       throw new Error("AI features disabled");
     }
 
-    const {
-      model = this.PRIMARY_MODEL,
-      maxTokens = 200,
-      temperature = 0.7,
-    } = options;
+    const { maxTokens = 200, temperature = 0.7 } = options;
 
     // Rate limiting check - 10 AI requests per minute
     if (!window.InputSanitizer?.checkRateLimit("ai_requests", 10, 60000)) {
@@ -45,48 +51,54 @@ class AIServices {
       );
     }
 
-    // Debug logging
-    console.log(`🤖 AI Request: ${model}`, { messages, options });
+    // Try each free model until one works
+    for (let i = 0; i < this.FREE_MODELS.length; i++) {
+      const modelToTry = this.FREE_MODELS[i];
 
-    try {
-      const response = await fetch(`${this.BASE_URL}/chat/completions`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${this.OPENROUTER_API_KEY}`,
-          "Content-Type": "application/json",
-          "HTTP-Referer": window.location.origin,
-          "X-Title": "Umoja AI - Voices of Change",
-        },
-        body: JSON.stringify({
-          model: model,
-          messages: messages,
-          max_tokens: maxTokens,
-          temperature: temperature,
-        }),
+      // Debug logging
+      console.log(`🤖 AI Request (attempt ${i + 1}): ${modelToTry}`, {
+        messages,
+        options,
       });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(
-          `OpenRouter API error: ${response.status} - ${errorText}`
-        );
-      }
-
-      const data = await response.json();
-      console.log(`✅ AI Response: ${model}`, data);
-      return data.choices[0].message.content.trim();
-    } catch (error) {
-      console.error(`❌ AI Error with ${model}:`, error);
-
-      // Try backup model if primary fails
-      if (model === this.PRIMARY_MODEL) {
-        return await this.makeOpenRouterCall(messages, {
-          ...options,
-          model: this.BACKUP_MODEL,
+      try {
+        const response = await fetch(`${this.BASE_URL}/chat/completions`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${this.OPENROUTER_API_KEY}`,
+            "Content-Type": "application/json",
+            "HTTP-Referer": window.location.origin,
+            "X-Title": "Umoja AI - Voices of Change",
+          },
+          body: JSON.stringify({
+            model: modelToTry,
+            messages: messages,
+            max_tokens: maxTokens,
+            temperature: temperature,
+          }),
         });
-      }
 
-      throw error;
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(
+            `OpenRouter API error: ${response.status} - ${errorText}`
+          );
+        }
+
+        const data = await response.json();
+        console.log(`✅ AI Response: ${modelToTry}`, data);
+        return data.choices[0].message.content.trim();
+      } catch (error) {
+        console.error(`❌ AI Error with ${modelToTry}:`, error);
+
+        // If this is the last model, throw the error
+        if (i === this.FREE_MODELS.length - 1) {
+          throw error;
+        }
+
+        // Otherwise continue to next model
+        console.log(`Trying next model...`);
+      }
     }
   }
 
@@ -95,7 +107,8 @@ class AIServices {
     if (!this.AI_ENABLED) {
       return {
         success: false,
-        message: "AI chat support is currently unavailable. Please try again later."
+        message:
+          "AI chat support is currently unavailable. Please try again later.",
       };
     }
 
@@ -125,51 +138,58 @@ Crisis Resources to share when needed:
 - Crisis Text Line: Text HOME to 741741
 - International Association for Suicide Prevention: https://www.iasp.info/resources/Crisis_Centres/
 
-Respond in a warm, understanding tone as if talking to a friend who needs support.`
+Respond in a warm, understanding tone as if talking to a friend who needs support.`,
       };
 
       // Build message history
       const messages = [systemPrompt];
-      
+
       // Add conversation history (last 10 messages for context)
       const recentHistory = conversationHistory.slice(-10);
-      recentHistory.forEach(msg => {
+      recentHistory.forEach((msg) => {
         messages.push({
-          role: msg.role === 'user' ? 'user' : 'assistant',
-          content: msg.content
+          role: msg.role === "user" ? "user" : "assistant",
+          content: msg.content,
         });
       });
 
       // Add current user message
       messages.push({
         role: "user",
-        content: userMessage
+        content: userMessage,
       });
 
       // Check for crisis keywords
-      const crisisKeywords = ['suicide', 'kill myself', 'end it all', 'want to die', 'self-harm', 'hurt myself'];
-      const isCrisis = crisisKeywords.some(keyword => 
+      const crisisKeywords = [
+        "suicide",
+        "kill myself",
+        "end it all",
+        "want to die",
+        "self-harm",
+        "hurt myself",
+      ];
+      const isCrisis = crisisKeywords.some((keyword) =>
         userMessage.toLowerCase().includes(keyword.toLowerCase())
       );
 
       const response = await this.makeOpenRouterCall(messages, {
         maxTokens: 300,
-        temperature: 0.8 // More creative and empathetic responses
+        temperature: 0.8, // More creative and empathetic responses
       });
 
       return {
         success: true,
         message: response,
         isCrisis: isCrisis,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       };
-
     } catch (error) {
-      console.error('Support chat error:', error);
+      console.error("Support chat error:", error);
       return {
         success: false,
-        message: "I'm having trouble responding right now. Your feelings are valid, and I'm here when you're ready to try again.",
-        error: error.message
+        message:
+          "I'm having trouble responding right now. Your feelings are valid, and I'm here when you're ready to try again.",
+        error: error.message,
       };
     }
   }
