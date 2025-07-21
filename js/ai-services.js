@@ -90,62 +90,91 @@ class AIServices {
     }
   }
 
-  // Content moderation using AI (fallback to simple word filtering)
-  async moderateContent(text) {
+  // AI Chat Support - Empathetic conversation for emotional support
+  async provideSupportChat(userMessage, conversationHistory = []) {
     if (!this.AI_ENABLED) {
-      // Simple fallback moderation using keyword filtering
-      const harmfulPatterns = [
-        /\b(hate|violence|threat|kill|die|suicide)\b/i,
-        /\b(f\*\*k|sh\*t|damn|hell)\b/i, // Add more patterns as needed
-      ];
-
-      const flagged = harmfulPatterns.some((pattern) => pattern.test(text));
-
       return {
-        flagged: flagged,
-        categories: flagged ? ["potential-harmful-content"] : [],
-        reason: flagged
-          ? "Content contains potentially harmful language"
-          : null,
+        success: false,
+        message: "AI chat support is currently unavailable. Please try again later."
       };
     }
 
     try {
-      const messages = [
-        {
-          role: "user",
-          content: `Analyze this text for harmful content. Respond with JSON format: {"flagged": true/false, "reason": "explanation if flagged", "categories": ["category1", "category2"]}
+      // Build conversation context
+      const systemPrompt = {
+        role: "system",
+        content: `You are Umoja AI, a compassionate and understanding AI counselor for the Voices of Change platform. Your role is to:
 
-Text to analyze: "${text}"`,
-        },
-      ];
+1. Provide emotional support and validation
+2. Listen actively and respond with empathy
+3. Ask thoughtful, caring questions
+4. Help users process their feelings
+5. Be culturally sensitive and inclusive
+6. Recognize when someone needs professional help
 
-      const result = await this.makeOpenRouterCall(messages, {
-        maxTokens: 100,
-        temperature: 0.1,
+Key principles:
+- Always be supportive and non-judgmental
+- Validate emotions and experiences
+- Focus on mental health, social justice, and personal empowerment
+- If someone mentions self-harm, suicide, or crisis - provide immediate resources
+- Encourage healthy coping strategies
+- Remember this is a safe space for vulnerable sharing
+
+Crisis Resources to share when needed:
+- National Suicide Prevention Lifeline: 988
+- Crisis Text Line: Text HOME to 741741
+- International Association for Suicide Prevention: https://www.iasp.info/resources/Crisis_Centres/
+
+Respond in a warm, understanding tone as if talking to a friend who needs support.`
+      };
+
+      // Build message history
+      const messages = [systemPrompt];
+      
+      // Add conversation history (last 10 messages for context)
+      const recentHistory = conversationHistory.slice(-10);
+      recentHistory.forEach(msg => {
+        messages.push({
+          role: msg.role === 'user' ? 'user' : 'assistant',
+          content: msg.content
+        });
       });
 
-      try {
-        const parsed = JSON.parse(result);
-        return {
-          flagged: parsed.flagged || false,
-          categories: parsed.categories || [],
-          reason: parsed.reason || null,
-        };
-      } catch (parseError) {
-        // Fallback if JSON parsing fails
-        const flagged =
-          result.toLowerCase().includes("true") ||
-          result.toLowerCase().includes("flagged");
-        return { flagged, error: false };
-      }
+      // Add current user message
+      messages.push({
+        role: "user",
+        content: userMessage
+      });
+
+      // Check for crisis keywords
+      const crisisKeywords = ['suicide', 'kill myself', 'end it all', 'want to die', 'self-harm', 'hurt myself'];
+      const isCrisis = crisisKeywords.some(keyword => 
+        userMessage.toLowerCase().includes(keyword.toLowerCase())
+      );
+
+      const response = await this.makeOpenRouterCall(messages, {
+        maxTokens: 300,
+        temperature: 0.8 // More creative and empathetic responses
+      });
+
+      return {
+        success: true,
+        message: response,
+        isCrisis: isCrisis,
+        timestamp: new Date().toISOString()
+      };
+
     } catch (error) {
-      console.error("Content moderation error:", error);
-      return { flagged: false, error: true };
+      console.error('Support chat error:', error);
+      return {
+        success: false,
+        message: "I'm having trouble responding right now. Your feelings are valid, and I'm here when you're ready to try again.",
+        error: error.message
+      };
     }
   }
 
-  // Automatic story categorization (fallback to keyword-based)
+  // Auto-categorization based on content analysis
   async categorizeStory(title, content) {
     if (!this.AI_ENABLED) {
       // Simple keyword-based categorization fallback
@@ -176,10 +205,10 @@ Text to analyze: "${text}"`,
       if (
         text.includes("justice") ||
         text.includes("rights") ||
-        text.includes("activism") ||
         text.includes("protest") ||
+        text.includes("activism") ||
         text.includes("inequality") ||
-        text.includes("fairness")
+        text.includes("racism")
       ) {
         return "social-justice";
       }
@@ -187,168 +216,222 @@ Text to analyze: "${text}"`,
       return "community"; // Default category
     }
 
-    const messages = [
-      {
-        role: "user",
-        content: `Analyze this story and categorize it into ONE of these categories:
-- mental-health: Stories about mental health struggles, recovery, awareness
-- gender-issues: Stories about gender equality, discrimination, identity  
-- social-justice: Stories about inequality, activism, community action
-- community: Stories about community building, local initiatives, helping others
+    try {
+      const messages = [
+        {
+          role: "user",
+          content: `Based on the title and content below, categorize this story into one of these categories: mental-health, gender-issues, social-justice, community, personal-growth, environment, entrepreneurship.
 
 Title: ${title}
 Content: ${content.substring(0, 500)}...
 
-Return ONLY the category name (mental-health, gender-issues, social-justice, or community).`,
-      },
-    ];
+Respond with just the category name, nothing else.`,
+        },
+      ];
 
-    try {
       const result = await this.makeOpenRouterCall(messages, {
-        maxTokens: 10,
+        maxTokens: 20,
         temperature: 0.1,
       });
 
-      // Validate the response is one of our categories
+      const category = result.toLowerCase().trim();
       const validCategories = [
         "mental-health",
         "gender-issues",
         "social-justice",
         "community",
+        "personal-growth",
+        "environment",
+        "entrepreneurship",
       ];
-      const category = result.toLowerCase().trim();
 
       return validCategories.includes(category) ? category : "community";
     } catch (error) {
-      console.error("Story categorization error:", error);
-      return "community"; // Default category
+      console.error("Categorization error:", error);
+      return "community"; // Default fallback
     }
   }
 
-  // Sentiment analysis
+  // Sentiment analysis for stories
   async analyzeSentiment(text) {
-    const messages = [
-      {
-        role: "user",
-        content: `Analyze the sentiment of this text. Respond with JSON format: {"sentiment": "positive/negative/neutral", "confidence": 0.0-1.0, "reasoning": "brief explanation"}
+    if (!this.AI_ENABLED) {
+      // Simple keyword-based sentiment analysis fallback
+      const positiveWords = [
+        "happy",
+        "joy",
+        "success",
+        "hope",
+        "love",
+        "grateful",
+        "amazing",
+        "wonderful",
+        "inspiring",
+      ];
+      const negativeWords = [
+        "sad",
+        "angry",
+        "depressed",
+        "frustrated",
+        "difficult",
+        "struggle",
+        "pain",
+        "hurt",
+        "challenging",
+      ];
 
-Text: "${text.substring(0, 500)}"`,
-      },
-    ];
+      const words = text.toLowerCase().split(/\s+/);
+      let positiveScore = 0;
+      let negativeScore = 0;
+
+      words.forEach((word) => {
+        if (positiveWords.includes(word)) positiveScore++;
+        if (negativeWords.includes(word)) negativeScore++;
+      });
+
+      const totalScore = positiveScore - negativeScore;
+      return {
+        sentiment:
+          totalScore > 0 ? "positive" : totalScore < 0 ? "negative" : "neutral",
+        confidence: Math.min(Math.abs(totalScore) * 0.1, 1.0),
+        positive_score: positiveScore,
+        negative_score: negativeScore,
+      };
+    }
 
     try {
+      const messages = [
+        {
+          role: "user",
+          content: `Analyze the sentiment of this text and respond in JSON format: {"sentiment": "positive/negative/neutral", "confidence": 0.0-1.0, "emotions": ["emotion1", "emotion2"]}
+
+Text: "${text.substring(0, 500)}"`,
+        },
+      ];
+
       const result = await this.makeOpenRouterCall(messages, {
         maxTokens: 100,
+        temperature: 0.1,
+      });
+
+      const analysis = JSON.parse(result);
+      return analysis;
+    } catch (error) {
+      console.error("Sentiment analysis error:", error);
+      return { sentiment: "neutral", confidence: 0.5, emotions: [] };
+    }
+  }
+
+  // Writing suggestions and improvements
+  async getWritingSuggestions(text) {
+    if (!this.AI_ENABLED) {
+      return {
+        suggestions: ["AI writing suggestions are currently unavailable."],
+        improvements: [],
+      };
+    }
+
+    try {
+      const messages = [
+        {
+          role: "user",
+          content: `Provide writing suggestions to improve this text. Focus on clarity, emotional impact, and storytelling. Respond in JSON format: {"suggestions": ["suggestion1", "suggestion2"], "improvements": ["improvement1", "improvement2"]}
+
+Text: "${text.substring(0, 800)}"`,
+        },
+      ];
+
+      const result = await this.makeOpenRouterCall(messages, {
+        maxTokens: 200,
+        temperature: 0.6,
+      });
+
+      const suggestions = JSON.parse(result);
+      return suggestions;
+    } catch (error) {
+      console.error("Writing suggestions error:", error);
+      return { suggestions: [], improvements: [] };
+    }
+  }
+
+  // Generate summary for stories
+  async generateSummary(content) {
+    if (!this.AI_ENABLED) {
+      return content.substring(0, 150) + "...";
+    }
+
+    try {
+      const messages = [
+        {
+          role: "user",
+          content: `Create a compelling 2-sentence summary of this story that captures its essence and emotional impact:
+
+${content.substring(0, 1000)}`,
+        },
+      ];
+
+      const summary = await this.makeOpenRouterCall(messages, {
+        maxTokens: 100,
+        temperature: 0.7,
+      });
+
+      return summary;
+    } catch (error) {
+      console.error("Summary generation error:", error);
+      return content.substring(0, 150) + "...";
+    }
+  }
+
+  // Find similar stories using AI-powered analysis
+  async findSimilarStories(story, allStories) {
+    if (!this.AI_ENABLED) {
+      // Fallback to simple keyword matching
+      const storyKeywords = this.extractKeywords(story.content);
+      const similarStories = allStories
+        .filter((s) => s.id !== story.id)
+        .map((s) => ({
+          story: s,
+          similarity: this.calculateSimilarity(
+            storyKeywords,
+            this.extractKeywords(s.content)
+          ),
+        }))
+        .sort((a, b) => b.similarity - a.similarity)
+        .slice(0, 3)
+        .map((item) => item.story);
+
+      return similarStories;
+    }
+
+    try {
+      const messages = [
+        {
+          role: "user",
+          content: `Based on this story, find the most similar stories from the list below. Consider themes, emotions, and topics. Return just the IDs of the 3 most similar stories as a JSON array.
+
+Target story: "${story.title}" - ${story.content.substring(0, 300)}
+
+Available stories:
+${allStories
+  .slice(0, 20)
+  .map((s) => `ID: ${s.id} - "${s.title}" - ${s.content.substring(0, 100)}`)
+  .join("\n")}`,
+        },
+      ];
+
+      const result = await this.makeOpenRouterCall(messages, {
+        maxTokens: 50,
         temperature: 0.3,
       });
 
-      try {
-        const parsed = JSON.parse(result);
-        return {
-          label: parsed.sentiment?.toUpperCase() || "NEUTRAL",
-          score: parsed.confidence || 0.5,
-          reasoning: parsed.reasoning,
-        };
-      } catch (parseError) {
-        // Simple fallback sentiment detection
-        const lowerText = result.toLowerCase();
-        if (lowerText.includes("positive"))
-          return { label: "POSITIVE", score: 0.7 };
-        if (lowerText.includes("negative"))
-          return { label: "NEGATIVE", score: 0.7 };
-        return { label: "NEUTRAL", score: 0.5 };
-      }
+      const similarIds = JSON.parse(result);
+      return allStories.filter((s) => similarIds.includes(s.id)).slice(0, 3);
     } catch (error) {
-      console.error("Sentiment analysis error:", error);
-      return { label: "NEUTRAL", score: 0.5 };
+      console.error("Similar stories error:", error);
+      return [];
     }
   }
 
-  // Writing assistance - suggest improvements
-  async getWritingSuggestions(text) {
-    const messages = [
-      {
-        role: "user",
-        content: `Review this personal story for a social impact blog and provide helpful writing suggestions.
-Focus on:
-1. Clarity and readability
-2. Emotional impact  
-3. Structure and flow
-4. Sensitivity (this is a personal story that may contain difficult topics)
-
-Story: ${text}
-
-Provide 2-3 brief, constructive suggestions in a supportive tone.`,
-      },
-    ];
-
-    try {
-      return await this.makeOpenRouterCall(messages, {
-        maxTokens: 250,
-        temperature: 0.7,
-      });
-    } catch (error) {
-      console.error("Writing suggestions error:", error);
-      return "Unable to generate suggestions at this time. Please try again later.";
-    }
-  }
-
-  // Generate story summary
-  async generateSummary(content) {
-    const messages = [
-      {
-        role: "user",
-        content: `Create a brief, compelling summary (1-2 sentences) for this personal story.
-Make it engaging but respectful of the personal nature of the content.
-
-Story: ${content.substring(0, 800)}...
-
-Summary:`,
-      },
-    ];
-
-    try {
-      return await this.makeOpenRouterCall(messages, {
-        maxTokens: 60,
-        temperature: 0.7,
-      });
-    } catch (error) {
-      console.error("Summary generation error:", error);
-      return null;
-    }
-  }
-
-  // Find similar stories for recommendations
-  async findSimilarStories(story, allStories) {
-    // Simple implementation using keyword matching
-    // In production, you'd use more sophisticated similarity algorithms
-    const storyWords = this.extractKeywords(story.title + " " + story.content);
-    const similarities = [];
-
-    for (const otherStory of allStories) {
-      if (otherStory.id === story.id) continue;
-
-      const otherWords = this.extractKeywords(
-        otherStory.title + " " + otherStory.content
-      );
-      const similarity = this.calculateSimilarity(storyWords, otherWords);
-
-      if (similarity > 0.1) {
-        // Threshold for similarity
-        similarities.push({
-          story: otherStory,
-          similarity: similarity,
-        });
-      }
-    }
-
-    return similarities
-      .sort((a, b) => b.similarity - a.similarity)
-      .slice(0, 3) // Return top 3 similar stories
-      .map((item) => item.story);
-  }
-
-  // Helper method to extract keywords
+  // Helper function to extract keywords
   extractKeywords(text) {
     const stopWords = [
       "the",
@@ -381,30 +464,50 @@ Summary:`,
       "would",
       "could",
       "should",
-      "can",
       "may",
       "might",
       "must",
-      "shall",
+      "can",
+      "this",
+      "that",
+      "these",
+      "those",
+      "i",
+      "you",
+      "he",
+      "she",
+      "it",
+      "we",
+      "they",
+      "me",
+      "him",
+      "her",
+      "us",
+      "them",
     ];
 
     return text
       .toLowerCase()
       .replace(/[^\w\s]/g, "")
-      .split(" ")
-      .filter((word) => word.length > 2 && !stopWords.includes(word));
+      .split(/\s+/)
+      .filter((word) => word.length > 2 && !stopWords.includes(word))
+      .slice(0, 20);
   }
 
-  // Helper method to calculate similarity between keyword arrays
+  // Simple similarity calculation
   calculateSimilarity(words1, words2) {
     const set1 = new Set(words1);
     const set2 = new Set(words2);
     const intersection = new Set([...set1].filter((x) => set2.has(x)));
     const union = new Set([...set1, ...set2]);
-
-    return intersection.size / union.size; // Jaccard similarity
+    return union.size > 0 ? intersection.size / union.size : 0;
   }
 }
 
-// Export AI services
+// Initialize AI services when the script loads
 window.UmojaAI = new AIServices();
+
+// Export for use in other modules
+if (typeof module !== "undefined" && module.exports) {
+  module.exports = AIServices;
+}
