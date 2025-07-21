@@ -223,7 +223,7 @@ class ChatManager {
       <div class="message-content">
         <div class="message-text">
           ${this.formatMessage(content)}
-          ${isCrisis ? this.getCrisisResourcesHTML() : ""}
+          <!-- Crisis resources removed -->
         </div>
         <div class="message-time">${timeString}</div>
       </div>
@@ -256,23 +256,7 @@ class ChatManager {
     return div.innerHTML;
   }
 
-  getCrisisResourcesHTML() {
-    return `
-      <div class="crisis-alert">
-        <h4><i class="fas fa-exclamation-triangle"></i> Immediate Support Available</h4>
-        <p>If you're in crisis or having thoughts of self-harm, please reach out for immediate help:</p>
-        <div class="crisis-buttons">
-          <a href="tel:988" class="crisis-btn">
-            <i class="fas fa-phone"></i> Call 988
-          </a>
-          <a href="sms:741741" class="crisis-btn">
-            <i class="fas fa-sms"></i> Text 741741
-          </a>
-        </div>
-        <p><strong>You are not alone. Professional help is available 24/7.</strong></p>
-      </div>
-    `;
-  }
+  // getCrisisResourcesHTML removed – crisis resources panel no longer shown
 
   showCrisisAlert() {
     // Optional: Could show a persistent crisis alert at the top of the chat
@@ -337,32 +321,45 @@ class ChatManager {
     if (!window.UmojaDB || !this.currentUser) return;
 
     try {
-      // Create a chat session record
-      const sessionData = {
+      // Create a new chat session row
+      const sessionInsert = {
         user_id: this.currentUser.id,
-        started_at: this.chatStartTime.toISOString(),
-        ended_at: new Date().toISOString(),
-        message_count: this.conversationHistory.length,
-        session_data: {
-          messages: this.conversationHistory,
-          has_crisis_keywords: this.conversationHistory.some(
-            (msg) => msg.isCrisis
-          ),
-          user_agent: navigator.userAgent,
-          platform: "web",
-        },
+        session_start: this.chatStartTime.toISOString(),
+        session_end: new Date().toISOString(),
+        is_anonymous: false,
+        crisis_detected: this.conversationHistory.some((m) => m.isCrisis),
       };
 
-      const { data, error } = await window.UmojaDB.supabase
+      const { data: session, error: sessionErr } = await window.UmojaDB.supabase
         .from("chat_sessions")
-        .insert([sessionData])
+        .insert([sessionInsert])
         .select()
         .single();
 
-      if (error) throw error;
+      if (sessionErr) throw sessionErr;
 
-      console.log("✅ Chat session saved to database:", data.id);
-      return data;
+      // Map messages to chat_messages table format
+      const messagesToInsert = this.conversationHistory.map((m) => ({
+        session_id: session.id,
+        role: m.role,
+        content: m.content,
+        is_crisis: m.isCrisis,
+        timestamp: m.timestamp,
+      }));
+
+      if (messagesToInsert.length > 0) {
+        const { error: msgErr } = await window.UmojaDB.supabase
+          .from("chat_messages")
+          .insert(messagesToInsert);
+
+        if (msgErr) throw msgErr;
+      }
+
+      console.log(
+        "✅ Chat session and messages saved to database:",
+        session.id
+      );
+      return session;
     } catch (error) {
       console.error("❌ Failed to save chat session:", error);
       throw error;
@@ -447,10 +444,10 @@ class ChatManager {
 
       const { data, error } = await window.UmojaDB.supabase
         .from("chat_sessions")
-        .select("session_data, started_at")
+        .select("id, session_start")
         .eq("user_id", this.currentUser.id)
-        .gte("started_at", `${today}T00:00:00.000Z`)
-        .order("started_at", { ascending: false })
+        .gte("session_start", `${today}T00:00:00.000Z`)
+        .order("session_start", { ascending: false })
         .limit(1)
         .single();
 
@@ -463,8 +460,22 @@ class ChatManager {
         return;
       }
 
-      if (data && data.session_data && data.session_data.messages) {
-        this.conversationHistory = data.session_data.messages;
+      if (data) {
+        // Fetch messages for this session
+        const { data: msgs, error: msgErr } = await window.UmojaDB.supabase
+          .from("chat_messages")
+          .select("role, content, is_crisis, timestamp")
+          .eq("session_id", data.id)
+          .order("timestamp", { ascending: true });
+
+        if (msgErr) throw msgErr;
+
+        this.conversationHistory = (msgs || []).map((m) => ({
+          role: m.role,
+          content: m.content,
+          isCrisis: m.is_crisis,
+          timestamp: m.timestamp,
+        }));
         console.log(
           "✅ Loaded conversation context from database:",
           this.conversationHistory.length,
