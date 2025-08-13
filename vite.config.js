@@ -1,8 +1,8 @@
 import { defineConfig } from "vite";
 
 export default defineConfig({
-  // Set the base URL for GitHub Pages deployment
-  base: "./",
+  // Set the base URL for Vercel deployment
+  base: "/",
 
   // Build configuration
   build: {
