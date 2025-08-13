@@ -2,10 +2,20 @@
 .env
 .env.local
 .env.production
+.env.development
+.env.*.local
 
-# Configuration files with API keys
+# Configuration files with API keys - exclude from git
 js/config.js
 public/js/config.js
+**/config.js
+!**/config.example.js
+
+# Any files containing sensitive data
+**/secret*
+**/private*
+**/*secret*
+**/*private*
 
 # Build outputs
 dist/
