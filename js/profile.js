@@ -129,6 +129,20 @@ class ProfileManager {
 
   async loadUserArticles() {
     try {
+      // Clear all containers first to prevent "no articles" flash
+      const containers = [
+        "articles-list",
+        "published-list",
+        "drafts-list",
+        "pending-list",
+      ];
+      containers.forEach((id) => {
+        const container = document.getElementById(id);
+        if (container) {
+          container.innerHTML = '<div class="loading-spinner">Loading...</div>';
+        }
+      });
+
       const result = await this.db.getUserStories(this.currentUser.id);
       if (result.success) {
         this.userArticles = result.stories || [];
@@ -146,12 +160,17 @@ class ProfileManager {
           this.userArticles = [...this.userArticles, ...newDrafts];
         }
 
-        this.renderArticles();
+        // Force immediate re-render
+        setTimeout(() => {
+          this.renderArticles();
+          this.updateStatistics();
+        }, 100);
       } else {
         this.userArticles = [];
         this.renderArticles();
       }
     } catch (error) {
+      console.error("Error loading articles:", error);
       this.userArticles = [];
       this.renderArticles();
     }
@@ -380,6 +399,8 @@ class ProfileManager {
   }
 
   async deleteArticle(articleId, title, status = "story") {
+    console.log(`🗑️ Attempting to delete ${status}: ${articleId}`);
+
     // Create custom confirmation dialog
     const isConfirmed = await this.showConfirmationDialog(
       `Delete ${status === "draft" ? "Draft" : "Story"}`,
@@ -391,11 +412,21 @@ class ProfileManager {
     );
 
     if (!isConfirmed) {
+      console.log("❌ Delete cancelled by user");
       return;
     }
 
     try {
-      // Log deletion attempt
+      console.log("🔄 Processing deletion...");
+
+      // Ensure database is available
+      if (!this.db && window.UmojaDB) {
+        this.db = window.UmojaDB;
+      }
+
+      if (!this.db) {
+        throw new Error("Database not available. Please refresh the page.");
+      }
 
       let result;
       if (status === "draft") {
@@ -404,104 +435,86 @@ class ProfileManager {
         result = await this.db.deleteStory(articleId);
       }
 
+      console.log("📊 Delete result:", result);
+
       if (result.success) {
-        // Remove from UI immediately for better UX
-        const articleElement = document.querySelector(
-          `[data-article-id="${articleId}"]`
-        );
-        if (articleElement) {
-          articleElement.style.transition = "all 0.3s ease";
-          articleElement.style.opacity = "0";
-          articleElement.style.transform = "translateX(-20px)";
-          setTimeout(() => {
-            articleElement.remove();
-          }, 300);
+        console.log("✅ Story deleted successfully");
+
+        // Show success message first
+        if (window.NotificationSystem) {
+          window.NotificationSystem.showNotification({
+            type: "success",
+            message: `${
+              status === "draft" ? "Draft" : "Story"
+            } deleted successfully`,
+          });
         }
 
-        // Reload articles after a short delay
-        setTimeout(async () => {
-          await this.loadUserArticles();
-          this.updateStatistics();
+        // Force immediate page refresh for clean UI update
+        setTimeout(() => {
+          window.location.reload();
         }, 500);
       } else {
-        // Error handling - could show user notification here
+        console.error("❌ Delete failed:", result.error);
+        // Show error message
+        if (window.NotificationSystem) {
+          window.NotificationSystem.showNotification({
+            type: "error",
+            message: `Failed to delete ${status}: ${
+              result.error || "Unknown error"
+            }`,
+          });
+        }
       }
     } catch (error) {
-      // Error handling - could show user notification here
+      console.error("💥 Delete error:", error);
+      // Show error message
+      if (window.NotificationSystem) {
+        window.NotificationSystem.showNotification({
+          type: "error",
+          message: `Failed to delete ${status}: ${error.message}`,
+        });
+      }
     }
   }
 
   async showConfirmationDialog(title, message, description, type = "warning") {
     return new Promise((resolve) => {
-      // Create modal overlay
+      // Clean simple modal
       const overlay = document.createElement("div");
-      overlay.className = "confirmation-overlay";
       overlay.style.cssText = `
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0, 0, 0, 0.7);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 10001;
-        opacity: 0;
-        transition: opacity 0.3s ease;
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.5); display: flex; align-items: center; 
+        justify-content: center; z-index: 999999;
       `;
 
-      // Create modal
       const modal = document.createElement("div");
-      modal.className = "confirmation-modal";
       modal.style.cssText = `
-        background: white;
-        border-radius: 12px;
-        padding: 24px;
-        max-width: 400px;
-        width: 90%;
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-        transform: scale(0.9);
-        transition: transform 0.3s ease;
+        background: white; border-radius: 8px; padding: 24px; 
+        max-width: 400px; width: 90%; text-align: center;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.15);
       `;
 
-      const iconColors = {
-        warning: "#f59e0b",
-        error: "#ef4444",
-        info: "#3b82f6",
-      };
-
-      const iconNames = {
-        warning: "fas fa-exclamation-triangle",
-        error: "fas fa-trash",
-        info: "fas fa-info-circle",
-      };
+      const icons = { warning: "⚠️", error: "🗑️", info: "ℹ️" };
+      const colors = { warning: "#f59e0b", error: "#ef4444", info: "#3b82f6" };
 
       modal.innerHTML = `
-        <div style="text-align: center; margin-bottom: 20px;">
-          <i class="${iconNames[type]}" style="font-size: 48px; color: ${iconColors[type]}; margin-bottom: 16px;"></i>
-          <h3 style="margin: 0; color: #1f2937; font-size: 20px;">${title}</h3>
-          <p style="margin: 8px 0; color: #4b5563; font-size: 16px;">${message}</p>
-          <p style="margin: 0; color: #6b7280; font-size: 14px;">${description}</p>
-        </div>
-        <div style="display: flex; gap: 12px; justify-content: flex-end;">
+        <div style="font-size: 48px; margin-bottom: 16px;">${
+          icons[type] || icons.warning
+        }</div>
+        <h3 style="margin: 0 0 8px 0; color: #1f2937;">${title}</h3>
+        <p style="margin: 0 0 8px 0; color: #6b7280;">${message}</p>
+        <p style="margin: 0 0 24px 0; color: #9ca3af; font-size: 14px;">${description}</p>
+        <div style="display: flex; gap: 12px; justify-content: center;">
           <button class="cancel-btn" style="
-            padding: 8px 16px;
-            border: 2px solid #d1d5db;
-            background: white;
-            color: #374151;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: 600;
+            padding: 8px 16px; border: 1px solid #ddd; background: white; 
+            color: #666; border-radius: 4px; cursor: pointer;
           ">Cancel</button>
           <button class="confirm-btn" style="
-            padding: 8px 16px;
-            border: none;
-            background: ${iconColors[type]};
-            color: white;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: 600;
+            padding: 8px 16px; border: none; background: ${
+              colors[type] || colors.warning
+            }; 
+            color: white; border-radius: 4px; cursor: pointer;
           ">Delete</button>
         </div>
       `;
@@ -509,40 +522,20 @@ class ProfileManager {
       overlay.appendChild(modal);
       document.body.appendChild(overlay);
 
-      // Show modal with animation
-      setTimeout(() => {
-        overlay.style.opacity = "1";
-        modal.style.transform = "scale(1)";
-      }, 10);
-
-      // Handle clicks
-      const handleClose = (confirmed) => {
-        overlay.style.opacity = "0";
-        modal.style.transform = "scale(0.9)";
-        setTimeout(() => {
-          document.body.removeChild(overlay);
-          resolve(confirmed);
-        }, 300);
+      modal.querySelector(".cancel-btn").onclick = () => {
+        overlay.remove();
+        resolve(false);
       };
-
-      modal
-        .querySelector(".cancel-btn")
-        .addEventListener("click", () => handleClose(false));
-      modal
-        .querySelector(".confirm-btn")
-        .addEventListener("click", () => handleClose(true));
-      overlay.addEventListener("click", (e) => {
-        if (e.target === overlay) handleClose(false);
-      });
-
-      // Handle escape key
-      const handleEscape = (e) => {
-        if (e.key === "Escape") {
-          document.removeEventListener("keydown", handleEscape);
-          handleClose(false);
+      modal.querySelector(".confirm-btn").onclick = () => {
+        overlay.remove();
+        resolve(true);
+      };
+      overlay.onclick = (e) => {
+        if (e.target === overlay) {
+          overlay.remove();
+          resolve(false);
         }
       };
-      document.addEventListener("keydown", handleEscape);
     });
   }
 
@@ -614,8 +607,14 @@ let profileManager;
 // Expose ProfileManager globally
 window.ProfileManager = ProfileManager;
 
-// Mobile navigation toggle
+// Initialize profileManager globally
 document.addEventListener("DOMContentLoaded", function () {
+  if (!profileManager) {
+    profileManager = new ProfileManager();
+    window.profileManager = profileManager; // Make it globally accessible
+  }
+
+  // Mobile navigation toggle
   const mobileToggle = document.querySelector(".mobile-nav-toggle");
   const nav = document.querySelector("nav");
 
