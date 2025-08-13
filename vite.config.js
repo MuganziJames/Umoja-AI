@@ -11,10 +11,14 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: "./index.html",
+        auth: "./pages/auth.html",
         stories: "./pages/stories.html",
         submit: "./pages/submit.html",
         about: "./pages/about.html",
         contact: "./pages/contact.html",
+        chat: "./pages/chat.html",
+        profile: "./pages/profile.html",
+        success: "./pages/success.html",
       },
     },
   },
