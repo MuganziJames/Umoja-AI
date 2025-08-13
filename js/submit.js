@@ -342,6 +342,7 @@ async function handleSubmission(e) {
       content: contentValidation.sanitized,
       category: document.getElementById("story-category")?.value || "general",
       isAnonymous: document.getElementById("anonymous")?.checked || false,
+      authorName: document.getElementById("full-name")?.value.trim() || "Anonymous",
     };
 
     console.log("Sanitized submission data:", submissionData);
