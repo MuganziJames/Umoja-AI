@@ -5,6 +5,7 @@
 
 # Configuration files with API keys
 js/config.js
+public/js/config.js
 
 # Build outputs
 dist/

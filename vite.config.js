@@ -42,8 +42,12 @@ export default defineConfig({
     global: "globalThis",
     // Inject environment variables for script tags
     __VITE_SUPABASE_URL__: JSON.stringify(process.env.VITE_SUPABASE_URL),
-    __VITE_SUPABASE_ANON_KEY__: JSON.stringify(process.env.VITE_SUPABASE_ANON_KEY),
-    __VITE_OPENROUTER_API_KEY__: JSON.stringify(process.env.VITE_OPENROUTER_API_KEY),
+    __VITE_SUPABASE_ANON_KEY__: JSON.stringify(
+      process.env.VITE_SUPABASE_ANON_KEY
+    ),
+    __VITE_OPENROUTER_API_KEY__: JSON.stringify(
+      process.env.VITE_OPENROUTER_API_KEY
+    ),
   },
 
   // Add a plugin to process config.js and replace environment variables
