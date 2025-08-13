@@ -267,6 +267,27 @@ storyForm.addEventListener("submit", handleSubmission);
 
 async function handleSubmission(e) {
   e.preventDefault();
+  
+  // Check if user is authenticated
+  if (window.UmojaDB) {
+    const user = await window.UmojaDB.getCurrentUser();
+    console.log("Current user status:", user ? "Authenticated" : "Not authenticated");
+    
+    if (!user) {
+      console.warn("User is not authenticated. This might affect story submission.");
+      
+      // Try to get session from SessionManager to see if there's a mismatch
+      const sessionUser = window.SessionManager?.getCurrentUser();
+      if (sessionUser && window.NotificationSystem) {
+        console.warn("Session mismatch detected: Local session exists but Supabase session is missing");
+        window.NotificationSystem.showNotification({
+          type: "warning",
+          message: "Your login session needs to be refreshed. Please log out and log in again for best results.",
+          duration: 10000
+        });
+      }
+    }
+  }
 
   // Rate limiting check
   if (!window.InputSanitizer.checkRateLimit("story_submission", 3, 300000)) {
