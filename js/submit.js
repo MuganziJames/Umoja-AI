@@ -267,23 +267,31 @@ storyForm.addEventListener("submit", handleSubmission);
 
 async function handleSubmission(e) {
   e.preventDefault();
-  
+
   // Check if user is authenticated
   if (window.UmojaDB) {
     const user = await window.UmojaDB.getCurrentUser();
-    console.log("Current user status:", user ? "Authenticated" : "Not authenticated");
-    
+    console.log(
+      "Current user status:",
+      user ? "Authenticated" : "Not authenticated"
+    );
+
     if (!user) {
-      console.warn("User is not authenticated. This might affect story submission.");
-      
+      console.warn(
+        "User is not authenticated. This might affect story submission."
+      );
+
       // Try to get session from SessionManager to see if there's a mismatch
       const sessionUser = window.SessionManager?.getCurrentUser();
       if (sessionUser && window.NotificationSystem) {
-        console.warn("Session mismatch detected: Local session exists but Supabase session is missing");
+        console.warn(
+          "Session mismatch detected: Local session exists but Supabase session is missing"
+        );
         window.NotificationSystem.showNotification({
           type: "warning",
-          message: "Your login session needs to be refreshed. Please log out and log in again for best results.",
-          duration: 10000
+          message:
+            "Your login session needs to be refreshed. Please log out and log in again for best results.",
+          duration: 10000,
         });
       }
     }
@@ -342,18 +350,62 @@ async function handleSubmission(e) {
       content: contentValidation.sanitized,
       category: document.getElementById("story-category")?.value || "general",
       isAnonymous: document.getElementById("anonymous")?.checked || false,
-      authorName: document.getElementById("full-name")?.value.trim() || "Anonymous",
+      authorName:
+        document.getElementById("full-name")?.value.trim() || "Anonymous",
     };
 
     console.log("Sanitized submission data:", submissionData);
 
+    // Handle image upload if an image was selected
+    if (fileInput.files.length > 0) {
+      try {
+        console.log("Uploading image...");
+        const file = fileInput.files[0];
+
+        if (!window.UmojaDB) {
+          throw new Error("Database manager not available");
+        }
+
+        const uploadResult = await window.UmojaDB.uploadFile(file);
+        if (!uploadResult.success) {
+          throw new Error(`Image upload failed: ${uploadResult.error}`);
+        }
+
+        // Add the image URL to the submission data
+        submissionData.imageUrl = uploadResult.publicURL;
+        console.log("Image uploaded successfully:", submissionData.imageUrl);
+      } catch (uploadError) {
+        console.error("Error uploading image:", uploadError);
+        // Continue without image if upload fails
+      }
+    }
+
     // Submit to database if available
     if (window.UmojaDB) {
-      const result = await window.UmojaDB.submitStory(submissionData);
-      if (result.success) {
-        console.log("Your story has been submitted successfully!");
-      } else {
-        throw new Error(result.error);
+      console.log("Submitting story to database:", submissionData);
+      try {
+        const result = await window.UmojaDB.submitStory(submissionData);
+        if (result.success) {
+          console.log("Your story has been submitted successfully!");
+        } else {
+          console.error("Story submission failed:", result.error);
+          throw new Error(result.error);
+        }
+      } catch (dbError) {
+        console.error("Database submission error:", dbError);
+        console.log("Attempting to save as draft instead...");
+
+        // Try saving as draft instead
+        try {
+          await saveDraft();
+          console.log("Story saved as draft instead");
+          throw new Error(
+            "Story could not be submitted but was saved as a draft"
+          );
+        } catch (draftError) {
+          console.error("Draft save also failed:", draftError);
+          throw new Error("Could not submit story: " + dbError.message);
+        }
       }
     } else {
       // Fallback for demo mode
