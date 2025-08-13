@@ -506,32 +506,38 @@
 
         console.log("✅ Immediate tab handlers attached");
 
-        // Add immediate form handlers to prevent default submission
+        // Store references to temporary handlers so we can remove them later
+        const tempSigninHandler = (e) => {
+          e.preventDefault();
+          console.log(
+            "🚫 Sign-in form submission prevented (waiting for auth manager)"
+          );
+          const formData = new FormData(e.target);
+          const email = formData.get("email");
+          console.log("📧 Attempted sign-in for:", email);
+        };
+
+        const tempSignupHandler = (e) => {
+          e.preventDefault();
+          console.log(
+            "🚫 Sign-up form submission prevented (waiting for auth manager)"
+          );
+        };
+
+        // Add temporary form handlers to prevent default submission
         const signinForm = document.getElementById("signin-form");
         const signupForm = document.getElementById("signup-form");
 
         if (signinForm) {
-          signinForm.addEventListener("submit", (e) => {
-            e.preventDefault();
-            console.log(
-              "🚫 Sign-in form submission prevented (waiting for auth manager)"
-            );
-
-            // Log attempt instead of showing warning
-            const formData = new FormData(e.target);
-            const email = formData.get("email");
-            console.log("📧 Attempted sign-in for:", email);
-          });
+          signinForm.addEventListener("submit", tempSigninHandler);
+          // Store reference for later removal
+          signinForm._tempHandler = tempSigninHandler;
         }
 
         if (signupForm) {
-          signupForm.addEventListener("submit", (e) => {
-            e.preventDefault();
-            console.log(
-              "🚫 Sign-up form submission prevented (waiting for auth manager)"
-            );
-            // No user-facing warning
-          });
+          signupForm.addEventListener("submit", tempSignupHandler);
+          // Store reference for later removal
+          signupForm._tempHandler = tempSignupHandler;
         }
       });
     </script>
@@ -604,6 +610,26 @@
               await new Promise((resolve) => setTimeout(resolve, 100));
 
               if (window.AuthManager && window.AuthManager.initialize) {
+                // Remove temporary event listeners before initializing auth manager
+                const signinForm = document.getElementById("signin-form");
+                const signupForm = document.getElementById("signup-form");
+
+                if (signinForm && signinForm._tempHandler) {
+                  signinForm.removeEventListener(
+                    "submit",
+                    signinForm._tempHandler
+                  );
+                  console.log("🗑️ Removed temporary signin handler");
+                }
+
+                if (signupForm && signupForm._tempHandler) {
+                  signupForm.removeEventListener(
+                    "submit",
+                    signupForm._tempHandler
+                  );
+                  console.log("🗑️ Removed temporary signup handler");
+                }
+
                 window.authManager = await window.AuthManager.initialize();
                 console.log(
                   "✅ Authentication system initialized successfully"

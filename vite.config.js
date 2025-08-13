@@ -42,11 +42,37 @@ export default defineConfig({
     global: "globalThis",
     // Inject environment variables for script tags
     __VITE_SUPABASE_URL__: JSON.stringify(process.env.VITE_SUPABASE_URL),
-    __VITE_SUPABASE_ANON_KEY__: JSON.stringify(
-      process.env.VITE_SUPABASE_ANON_KEY
-    ),
-    __VITE_OPENROUTER_API_KEY__: JSON.stringify(
-      process.env.VITE_OPENROUTER_API_KEY
-    ),
+    __VITE_SUPABASE_ANON_KEY__: JSON.stringify(process.env.VITE_SUPABASE_ANON_KEY),
+    __VITE_OPENROUTER_API_KEY__: JSON.stringify(process.env.VITE_OPENROUTER_API_KEY),
   },
+
+  // Add a plugin to process config.js and replace environment variables
+  plugins: [
+    {
+      name: "replace-env-vars",
+      generateBundle(options, bundle) {
+        // Process config.js files and replace environment variables
+        for (const fileName in bundle) {
+          if (fileName.includes("config.js")) {
+            const chunk = bundle[fileName];
+            if (chunk.type === "asset" && typeof chunk.source === "string") {
+              chunk.source = chunk.source
+                .replace(
+                  '"__VITE_SUPABASE_URL__"',
+                  JSON.stringify(process.env.VITE_SUPABASE_URL)
+                )
+                .replace(
+                  '"__VITE_SUPABASE_ANON_KEY__"',
+                  JSON.stringify(process.env.VITE_SUPABASE_ANON_KEY)
+                )
+                .replace(
+                  '"__VITE_OPENROUTER_API_KEY__"',
+                  JSON.stringify(process.env.VITE_OPENROUTER_API_KEY)
+                );
+            }
+          }
+        }
+      },
+    },
+  ],
 });
