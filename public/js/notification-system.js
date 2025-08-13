@@ -11,6 +11,13 @@ class NotificationSystem {
     return null;
   }
 
+  // Standard method that submit.js expects
+  showNotification(options) {
+    const { type = "info", message, duration } = options || {};
+    console.log(`[${type.toUpperCase()}] ${message}`);
+    return null;
+  }
+
   success(message, options) {
     console.log(`[SUCCESS] ${message}`);
     return null;

@@ -243,8 +243,7 @@ class DatabaseManager {
             return {
               success: true,
               story: retryData,
-              message:
-                "Your story has been published successfully! It's now live on the website.",
+              message: "Story published successfully!",
             };
           }
 
@@ -255,8 +254,7 @@ class DatabaseManager {
         return {
           success: true,
           story: data,
-          message:
-            "Your story has been published successfully! It's now live on the website.",
+          message: "Story published successfully!",
         };
       } catch (insertError) {
         console.error("❌ Failed to insert story:", insertError);
