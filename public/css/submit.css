@@ -1,0 +1,274 @@
+/* Submit Page Specific Styles */
+
+/* Page Header - same style as stories.css but included here for completeness */
+.page-header {
+    background: linear-gradient(to right, var(--primary-dark), var(--primary-color));
+    color: white;
+    padding: var(--spacing-xl) 0;
+    text-align: center;
+}
+
+.page-header h1 {
+    color: white;
+    margin-bottom: var(--spacing-sm);
+}
+
+.page-header p {
+    font-size: var(--font-size-lg);
+    max-width: 700px;
+    margin: 0 auto;
+}
+
+/* Submission Guidelines */
+.submission-guidelines {
+    background-color: var(--bg-alt);
+    padding: var(--spacing-xl) 0;
+}
+
+.guidelines-content {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.guidelines-content h2 {
+    margin-bottom: var(--spacing-md);
+    color: var(--primary-color);
+}
+
+.guidelines-content ul {
+    margin-left: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
+}
+
+.guidelines-content li {
+    margin-bottom: var(--spacing-sm);
+    display: flex;
+    align-items: flex-start;
+}
+
+.guidelines-content li i {
+    color: var(--success);
+    margin-right: var(--spacing-sm);
+    margin-top: 0.3rem;
+}
+
+/* Submission Form */
+.submission-form {
+    padding: var(--spacing-xl) 0;
+}
+
+.submission-form .container {
+    max-width: 800px;
+}
+
+form {
+    background-color: var(--bg-color);
+    padding: var(--spacing-xl);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-md);
+}
+
+.form-group {
+    margin-bottom: var(--spacing-lg);
+}
+
+label {
+    display: block;
+    margin-bottom: var(--spacing-sm);
+    font-weight: 600;
+}
+
+.required {
+    color: var(--danger);
+}
+
+input[type="text"],
+input[type="email"],
+select,
+textarea {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    font-family: var(--font-primary);
+    transition: border-color var(--transition-fast);
+}
+
+input[type="text"]:focus,
+input[type="email"]:focus,
+select:focus,
+textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(121, 82, 179, 0.2);
+}
+
+select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23333' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    padding-right: 2.5rem;
+}
+
+textarea {
+    resize: vertical;
+    min-height: 200px;
+}
+
+small {
+    display: block;
+    margin-top: var(--spacing-xs);
+    color: var(--text-muted);
+    font-size: var(--font-size-sm);
+}
+
+/* Character Count */
+.character-count {
+    text-align: right;
+    color: var(--text-muted);
+    font-size: var(--font-size-sm);
+    margin-top: var(--spacing-xs);
+}
+
+.character-warning {
+    margin-top: var(--spacing-xs);
+    color: var(--danger);
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+}
+
+/* File Upload */
+.file-upload {
+    display: flex;
+    align-items: center;
+    margin-bottom: var(--spacing-sm);
+}
+
+.file-upload input[type="file"] {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    border: 0;
+}
+
+.file-upload-label {
+    background-color: var(--bg-alt);
+    color: var(--text-color);
+    padding: 0.5rem var(--spacing-md);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    transition: background-color var(--transition-fast);
+    margin-bottom: 0;
+}
+
+.file-upload-label:hover {
+    background-color: var(--border-color);
+}
+
+#file-name {
+    margin-left: var(--spacing-md);
+    color: var(--text-muted);
+}
+
+/* Checkbox Group */
+.checkbox-group {
+    display: flex;
+    align-items: flex-start;
+}
+
+.checkbox-group input[type="checkbox"] {
+    margin-right: var(--spacing-sm);
+    margin-top: 0.25rem;
+}
+
+.checkbox-group label {
+    margin-bottom: 0;
+    font-weight: normal;
+}
+
+/* Form Actions */
+.form-actions {
+    display: flex;
+    gap: var(--spacing-md);
+    margin-top: var(--spacing-xl);
+}
+
+/* Submission Success */
+.submission-success {
+    text-align: center;
+    padding: var(--spacing-2xl) var(--spacing-xl);
+    background-color: var(--bg-color);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-md);
+}
+
+.submission-success i {
+    font-size: 4rem;
+    color: var(--success);
+    margin-bottom: var(--spacing-md);
+}
+
+.submission-success h2 {
+    color: var(--success);
+    margin-bottom: var(--spacing-md);
+}
+
+.submission-success p {
+    max-width: 600px;
+    margin: 0 auto var(--spacing-xl);
+}
+
+.success-actions {
+    display: flex;
+    justify-content: center;
+    gap: var(--spacing-md);
+}
+
+.hidden {
+    display: none;
+}
+
+/* Character count states */
+.warning {
+    color: var(--warning);
+}
+
+.danger {
+    color: var(--danger);
+}
+
+.success {
+    color: var(--success);
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    form {
+        padding: var(--spacing-lg);
+    }
+    
+    .form-actions {
+        flex-direction: column;
+    }
+    
+    .form-actions button {
+        width: 100%;
+    }
+    
+    .success-actions {
+        flex-direction: column;
+    }
+    
+    .success-actions a,
+    .success-actions button {
+        width: 100%;
+    }
+} 

@@ -21,7 +21,12 @@ export default defineConfig({
         success: "./pages/success.html",
       },
     },
+    // Copy JS and CSS files as static assets
+    copyPublicDir: true,
   },
+
+  // Configure public directory
+  publicDir: "public",
 
   // Development server configuration
   server: {
