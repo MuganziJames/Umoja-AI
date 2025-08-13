@@ -120,10 +120,9 @@ class DatabaseManager {
     try {
       this.ensureInitialized();
 
+      // Try to get current user but don't require it
       const user = await this.getCurrentUser();
-      if (!user) {
-        throw new Error("User must be authenticated to submit stories");
-      }
+      console.log("Submitting story as user:", user ? user.email : "Anonymous user");
 
       // Validate required fields (simplified)
       if (!storyData.title || !storyData.content) {
@@ -160,7 +159,7 @@ class DatabaseManager {
           storyData.content.substring(0, 200) +
           (storyData.content.length > 200 ? "..." : ""),
         author_name: storyData.authorName.trim(),
-        author_email: user.email,
+        author_email: user ? user.email : "anonymous@example.com",
         category: storyData.category || "community",
         status: "approved", // CHANGED: Direct approval - no review needed
         is_anonymous: Boolean(storyData.isAnonymous),
@@ -183,7 +182,7 @@ class DatabaseManager {
         comment_count: 0,
         share_count: 0,
         bookmark_count: 0,
-        user_id: user.id,
+        user_id: user ? user.id : null,
         category_id: categoryId,
         moderator_id: null,
         moderation_notes: "Auto-approved on submission",
