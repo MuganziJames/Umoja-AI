@@ -79,6 +79,9 @@ class InputSanitizer {
 
     // Check if under limit
     if (validRequests.length >= limit) {
+      console.log(
+        `⚠️ Rate limit exceeded for ${key}: ${validRequests.length}/${limit}`
+      );
       return false; // Rate limit exceeded
     }
 
@@ -87,6 +90,12 @@ class InputSanitizer {
     this.rateLimitStore.set(key, validRequests);
 
     return true; // Request allowed
+  }
+
+  // Reset rate limit for a specific key (for testing)
+  resetRateLimit(key) {
+    this.rateLimitStore.delete(key);
+    console.log(`🔄 Rate limit reset for key: ${key}`);
   }
 
   // Get remaining requests for rate limit
@@ -147,6 +156,91 @@ class InputSanitizer {
     return {
       valid: errors.length === 0,
       errors: errors,
+    };
+  }
+
+  // Validate file upload (wrapper for validateFile with different return format)
+  validateFileUpload(file, options = {}) {
+    const validation = this.validateFile(file, options);
+    return {
+      isValid: validation.valid,
+      errors: validation.errors,
+    };
+  }
+
+  // Validate story content specifically
+  validateStoryContent(content) {
+    if (!content || typeof content !== "string") {
+      return {
+        isValid: false,
+        errors: ["Content is required"],
+        sanitized: "",
+      };
+    }
+
+    const trimmed = content.trim();
+
+    // Check minimum length
+    if (trimmed.length < 10) {
+      return {
+        isValid: false,
+        errors: ["Story content must be at least 10 characters long"],
+        sanitized: trimmed,
+      };
+    }
+
+    // Check maximum length
+    if (trimmed.length > 5000) {
+      return {
+        isValid: false,
+        errors: ["Story content must not exceed 5000 characters"],
+        sanitized: trimmed,
+      };
+    }
+
+    // Check word count (minimum 5 words)
+    const wordCount = trimmed
+      .split(/\s+/)
+      .filter((word) => word.length > 0).length;
+    if (wordCount < 5) {
+      return {
+        isValid: false,
+        errors: ["Story must contain at least 5 words"],
+        sanitized: trimmed,
+      };
+    }
+
+    // Sanitize the content
+    const sanitized = this.sanitizeText(trimmed);
+
+    // Check for profanity
+    if (this.containsProfanity(sanitized)) {
+      return {
+        isValid: false,
+        errors: ["Content contains inappropriate language"],
+        sanitized: sanitized,
+      };
+    }
+
+    return {
+      isValid: true,
+      errors: [],
+      sanitized: sanitized,
+    };
+  }
+
+  // Sanitize story data object
+  sanitizeStoryData(storyData) {
+    return {
+      title: this.sanitizeText(storyData.title || ""),
+      content: this.sanitizeText(storyData.content || ""),
+      category: this.sanitizeText(storyData.category || ""),
+      authorName: this.sanitizeText(storyData.authorName || ""),
+      isAnonymous: Boolean(storyData.isAnonymous),
+      imageUrl:
+        storyData.imageUrl && this.validateURL(storyData.imageUrl)
+          ? storyData.imageUrl
+          : null,
     };
   }
 

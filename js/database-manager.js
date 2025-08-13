@@ -122,11 +122,16 @@ class DatabaseManager {
 
       // Try to get current user but don't require it
       const user = await this.getCurrentUser();
-      console.log("Submitting story as user:", user ? user.email : "Anonymous user");
+      console.log(
+        "Submitting story as user:",
+        user ? user.email : "Anonymous user"
+      );
 
       // Validate required fields (simplified)
-      if (!storyData.title || !storyData.content) {
-        throw new Error("Missing required fields: title or content");
+      if (!storyData.title || !storyData.content || !storyData.authorName) {
+        throw new Error(
+          "Missing required fields: title, content, or authorName"
+        );
       }
 
       // Get category ID from category slug if category is provided
@@ -159,7 +164,11 @@ class DatabaseManager {
           storyData.content.substring(0, 200) +
           (storyData.content.length > 200 ? "..." : ""),
         author_name: storyData.authorName.trim(),
-        author_email: user ? user.email : "anonymous@example.com",
+        author_email: user
+          ? user.email
+          : `${storyData.authorName
+              .toLowerCase()
+              .replace(/\s+/g, ".")}@anonymous.local`,
         category: storyData.category || "community",
         status: "approved", // CHANGED: Direct approval - no review needed
         is_anonymous: Boolean(storyData.isAnonymous),
@@ -194,27 +203,65 @@ class DatabaseManager {
 
       console.log("📝 Final story record to insert:", storyRecord);
 
-      // Insert into database
-      const { data, error } = await this.supabase
-        .from("stories")
-        .insert([storyRecord])
-        .select()
-        .single();
+      // Try to insert into database with better error handling
+      try {
+        console.log("🔄 Attempting to insert story...");
 
-      if (error) {
-        console.error("❌ Database insertion error:", error);
-        throw new Error(`Database error: ${error.message}`);
+        const { data, error } = await this.supabase
+          .from("stories")
+          .insert([storyRecord])
+          .select()
+          .single();
+
+        if (error) {
+          console.error("❌ Database insertion error:", error);
+
+          // If it's an RLS error and we don't have a user, try with a different approach
+          if (error.code === "42501" || error.message.includes("policy")) {
+            console.log(
+              "🔄 RLS policy blocked insertion, trying alternative approach..."
+            );
+
+            // Try without user_id for anonymous submissions
+            const anonymousRecord = { ...storyRecord };
+            delete anonymousRecord.user_id;
+
+            const { data: retryData, error: retryError } = await this.supabase
+              .from("stories")
+              .insert([anonymousRecord])
+              .select()
+              .single();
+
+            if (retryError) {
+              throw new Error(`Database error (retry): ${retryError.message}`);
+            }
+
+            console.log(
+              "✅ Story inserted successfully (anonymous):",
+              retryData
+            );
+            return {
+              success: true,
+              story: retryData,
+              message:
+                "Your story has been published successfully! It's now live on the website.",
+            };
+          }
+
+          throw new Error(`Database error: ${error.message}`);
+        }
+
+        console.log("✅ Story inserted successfully:", data);
+        return {
+          success: true,
+          story: data,
+          message:
+            "Your story has been published successfully! It's now live on the website.",
+        };
+      } catch (insertError) {
+        console.error("❌ Failed to insert story:", insertError);
+        throw insertError;
       }
-
-      console.log("✅ Story inserted successfully:", data);
-      console.log("✅ UPLOAD SUCCESS AT:", new Date().toISOString());
-
-      return {
-        success: true,
-        story: data,
-        message:
-          "Thank you for uploading your story! Every story matters to us. Your story is now live on the website.",
-      };
     } catch (error) {
       console.error("❌ Submit story error:", error);
       return {
@@ -232,14 +279,13 @@ class DatabaseManager {
 
       console.log("🔍 Getting stories with filters:", filters);
 
-      // Build query without joins since relationships don't exist
-      // This should get ALL approved stories from ALL users
+      // Build query to get approved stories only
       let query = this.supabase
         .from("stories")
         .select("*")
         .eq("status", "approved")
         .not("published_at", "is", null)
-        .order("published_at", { ascending: false }); // Sort by published_at instead of created_at
+        .order("published_at", { ascending: false });
 
       // Apply filters
       if (filters.category && filters.category !== "all") {
@@ -254,17 +300,14 @@ class DatabaseManager {
 
       if (error) {
         console.error("❌ Get stories error:", error);
-        // If there's an RLS error, try to bypass it by getting all public stories
-        console.log("🔄 Attempting to get public stories...");
-        return await this.getPublicStories(filters);
+        return { success: false, error: error.message, stories: [] };
       }
 
-      console.log("✅ Retrieved stories:", data?.length || 0);
+      console.log(`✅ Retrieved ${data?.length || 0} stories`);
       return { success: true, stories: data || [] };
     } catch (error) {
       console.error("Get stories error:", error);
-      // Fallback to public stories
-      return await this.getPublicStories(filters);
+      return { success: false, error: error.message, stories: [] };
     }
   }
 
@@ -734,6 +777,31 @@ class DatabaseManager {
         callback
       )
       .subscribe();
+  }
+
+  // Debug function to test database connectivity
+  async testConnection() {
+    try {
+      this.ensureInitialized();
+      console.log("🔍 Testing database connection...");
+
+      // Try a simple query to categories table (should be public)
+      const { data, error } = await this.supabase
+        .from("categories")
+        .select("name, slug")
+        .limit(1);
+
+      if (error) {
+        console.error("❌ Connection test failed:", error);
+        return { success: false, error: error.message };
+      }
+
+      console.log("✅ Database connection successful");
+      return { success: true, data };
+    } catch (error) {
+      console.error("❌ Connection test error:", error);
+      return { success: false, error: error.message };
+    }
   }
 
   // Debug function to check what stories exist

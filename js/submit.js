@@ -12,6 +12,27 @@ const saveDraftBtn = document.getElementById("save-draft");
 const submissionSuccess = document.getElementById("submission-success");
 const submitAnother = document.getElementById("submit-another");
 
+// Global state
+let UmojaDB = null;
+
+// Initialize database connection
+async function initializeDatabase() {
+  try {
+    if (window.DatabaseManager) {
+      UmojaDB = await window.DatabaseManager.waitForConfigAndCreate();
+      window.UmojaDB = UmojaDB; // Make it globally available
+      console.log("✅ Database initialized successfully");
+      return true;
+    } else {
+      console.error("❌ DatabaseManager not available");
+      return false;
+    }
+  } catch (error) {
+    console.error("❌ Failed to initialize database:", error);
+    return false;
+  }
+}
+
 // AI-enhanced elements
 const aiSuggestionsBtn = document.getElementById("ai-suggestions");
 const aiSuggestionsPanel = document.getElementById("ai-suggestions-panel");
@@ -155,6 +176,9 @@ async function saveDraft() {
 
 // Load draft if exists
 document.addEventListener("DOMContentLoaded", async () => {
+  // Initialize database connection first
+  await initializeDatabase();
+
   // Wait for notification system
   await new Promise((resolve) => {
     if (window.NotificationSystem) {
@@ -268,6 +292,21 @@ storyForm.addEventListener("submit", handleSubmission);
 async function handleSubmission(e) {
   e.preventDefault();
 
+  // Test database connection first
+  if (window.UmojaDB) {
+    console.log("🔍 Testing database connection...");
+    const connectionTest = await window.UmojaDB.testConnection();
+    if (!connectionTest.success) {
+      console.error("❌ Database connection failed:", connectionTest.error);
+      alert(
+        "Database connection failed. Please check your internet connection and try again."
+      );
+      return;
+    } else {
+      console.log("✅ Database connection verified");
+    }
+  }
+
   // Check if user is authenticated
   if (window.UmojaDB) {
     const user = await window.UmojaDB.getCurrentUser();
@@ -300,7 +339,11 @@ async function handleSubmission(e) {
   // Rate limiting check
   if (!window.InputSanitizer.checkRateLimit("story_submission", 3, 300000)) {
     // 3 submissions per 5 minutes
-    console.error("Too many submissions. Please wait before submitting again.");
+    showError(
+      "⏰ Too many submissions! You can submit up to 3 stories every 5 minutes. Please wait before submitting again."
+    );
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = originalText;
     return;
   }
 
@@ -382,34 +425,43 @@ async function handleSubmission(e) {
 
     // Submit to database if available
     if (window.UmojaDB) {
-      console.log("Submitting story to database:", submissionData);
+      console.log("🚀 Submitting story to database...", submissionData);
       try {
         const result = await window.UmojaDB.submitStory(submissionData);
         if (result.success) {
-          console.log("Your story has been submitted successfully!");
+          console.log("✅ Story submission successful!", result.message);
+
+          // Show success notification if available
+          if (window.NotificationSystem) {
+            window.NotificationSystem.showNotification({
+              type: "success",
+              message: result.message,
+              duration: 5000,
+            });
+          }
         } else {
-          console.error("Story submission failed:", result.error);
+          console.error("❌ Story submission failed:", result.error);
           throw new Error(result.error);
         }
       } catch (dbError) {
-        console.error("Database submission error:", dbError);
-        console.log("Attempting to save as draft instead...");
+        console.error("💥 Database submission error:", dbError);
 
-        // Try saving as draft instead
-        try {
-          await saveDraft();
-          console.log("Story saved as draft instead");
-          throw new Error(
-            "Story could not be submitted but was saved as a draft"
-          );
-        } catch (draftError) {
-          console.error("Draft save also failed:", draftError);
-          throw new Error("Could not submit story: " + dbError.message);
+        // Show error notification
+        if (window.NotificationSystem) {
+          window.NotificationSystem.showNotification({
+            type: "error",
+            message: "Failed to submit story: " + dbError.message,
+            duration: 8000,
+          });
         }
+
+        throw new Error("Could not submit story: " + dbError.message);
       }
     } else {
-      // Fallback for demo mode
-      console.log("Story submitted successfully! (Demo mode)");
+      console.error("❌ Database manager not available");
+      throw new Error(
+        "Database connection is not available. Please refresh the page and try again."
+      );
     }
 
     // Hide the form and show success message
@@ -451,3 +503,16 @@ submitAnother.addEventListener("click", () => {
 document.addEventListener("DOMContentLoaded", () => {
   loadStoryForEdit();
 });
+
+// Developer helper: Reset rate limit for testing
+// Usage: resetStoryRateLimit() in browser console
+window.resetStoryRateLimit = function () {
+  if (window.InputSanitizer) {
+    window.InputSanitizer.resetRateLimit("story_submission");
+    console.log(
+      "✅ Story submission rate limit has been reset. You can now submit again."
+    );
+  } else {
+    console.log("❌ InputSanitizer not available.");
+  }
+};
